@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-mist-50: #F0F9FA;
+  --color-mist-100: #E2F4F6;
+  --color-mist-200: #C4E9ED;
+  --color-mist-300: #80CDD6;
+  --color-mist-400: #22D3EE;
+  --color-mist-600: #0E7490;
+  --color-mist-800: #164E63;
+  --color-mist-900: #082F38;
+
+  --color-coral-50: #FFF5F0;
+  --color-coral-100: #FFE4D6;
+  --color-coral-300: #FCA27A;
+  --color-coral-500: #F97316;
+  --color-coral-700: #C2410C;
+  --color-coral-900: #7C2D12;
+
+  --color-success-primary: #16A34A;
+  --color-success-bg: #DCFCE7;
+  --color-warning-primary: #F97316;
+  --color-warning-bg: #FFF7ED;
+  --color-danger-primary: #DC2626;
+  --color-danger-bg: #FEF2F2;
+  --color-neutral-muted: #6B7280;
+  --color-neutral-bg: #F3F4F6;
+
+  --color-ocean: #0E7490;
+  --color-ember: #F97316;
+  --color-leaf: #16A34A;
+  --color-grape: #7C3AED;
+  --color-rose: #DB2777;
+  --color-gold: #D97706;
+  --color-cobalt: #0369A1;
+  --color-stone: #6B7280;
+
+  --font-sans: 'Poppins', 'Inter', sans-serif;
+}
