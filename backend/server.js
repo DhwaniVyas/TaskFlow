@@ -5,7 +5,7 @@ const { env } = require("./src/config/env");
 async function startServer() {
   try {
     await connectDB();
-    app.listen(env.PORT, () => {
+    app.listen(env.PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
     });
   } catch (error) {

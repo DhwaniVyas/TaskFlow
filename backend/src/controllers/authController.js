@@ -213,7 +213,7 @@ async function forgotPassword(req, res, next) {
     user.passwordResetTokenExpiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30m
     await user.save();
 
-    const resetUrl = `${env.APP_URL}/reset-password?token=${rawToken}`;
+    const resetUrl = `${resolveAppUrl(req)}/reset-password?token=${rawToken}`;
     const html = `
       <h2>Reset your TaskFlow password</h2>
       <p>Click below to reset your password:</p>

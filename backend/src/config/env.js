@@ -31,6 +31,7 @@ const env = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   CLIENT_URL: process.env.CLIENT_URL,
+  CLIENT_URLS: process.env.CLIENT_URLS ? process.env.CLIENT_URLS .split(",") .map((item) => item.trim()) .filter(Boolean) : [],
   APP_URL: process.env.APP_URL,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: Number(process.env.SMTP_PORT),
