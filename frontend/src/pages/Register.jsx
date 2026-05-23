@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiCheckSquare } from 'react-icons/fi';
+import api from '../api/client';
+import { isAuthenticated, setToken } from '../utils/auth';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,6 +17,13 @@ export default function Register() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -40,17 +50,22 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    // Mock registration timeout
-    setTimeout(() => {
+    try {
+      setApiError('');
+      setIsLoading(true);
+      const response = await api.post('/auth/register', { fullName: name, email, password });
+      const { token } = response.data.data;
+      setToken(token);
+      navigate('/dashboard');
+    } catch (error) {
+      setApiError(error?.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
       setIsLoading(false);
-      alert('Registration successful! (Mock authentication)');
-      navigate('/login');
-    }, 1500);
+    }
   };
 
   return (
@@ -80,6 +95,7 @@ export default function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {apiError && <p className="form-error-msg">{apiError}</p>}
             {/* Name Field */}
             <div className="form-group">
               <label className="form-label" htmlFor="name">Full Name</label>
