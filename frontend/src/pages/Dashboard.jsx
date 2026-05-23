@@ -9,12 +9,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState(null);
+  const [fullName, setFullName] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         const { data } = await api.get("/dashboard");
         setDashboard(data.data);
+        setFullName(data.data.user.fullName);
       } catch (err) {
         setError(err?.response?.data?.message || "Failed to load dashboard");
       } finally {
@@ -25,8 +28,21 @@ export default function Dashboard() {
   }, []);
 
   const handleLogout = () => {
+    api.post("/auth/logout").catch(() => {});
     clearToken();
     navigate("/login");
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      setProfileMessage("");
+      const { data } = await api.put("/auth/me", { fullName });
+      setDashboard((prev) => ({ ...prev, user: data.data }));
+      setProfileMessage("Profile updated successfully.");
+    } catch (err) {
+      setProfileMessage(err?.response?.data?.message || "Failed to update profile.");
+    }
   };
 
   if (loading) {
@@ -82,7 +98,16 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold text-[#082F38] mb-2">Account Summary</h2>
           <p className="text-sm text-[#5B9EA8]">Email: {user.email}</p>
           <p className="text-sm text-[#5B9EA8]">Role: {user.role}</p>
-          <p className="text-sm text-[#5B9EA8] mt-4">Next step: we can now connect real project/task modules to this dashboard.</p>
+          <form onSubmit={handleProfileUpdate} className="mt-5 max-w-md">
+            <label className="form-label">Full Name</label>
+            <input
+              className="form-input w-full mt-1"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+            <button className="btn btn-primary mt-3" type="submit">Update Profile</button>
+          </form>
+          {profileMessage && <p className="text-sm mt-3 text-[#0E7490]">{profileMessage}</p>}
         </div>
       </main>
     </div>

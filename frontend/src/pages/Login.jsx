@@ -106,7 +106,7 @@ export default function Login() {
             <div className="form-group">
               <div className="flex justify-between items-center">
                 <label className="form-label" htmlFor="password">Password</label>
-                <a href="#" className="text-xs text-[#0E7490] hover:text-[#164E63] font-medium">Forgot password?</a>
+                <Link to="/forgot-password" className="text-xs text-[#0E7490] hover:text-[#164E63] font-medium">Forgot password?</Link>
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#5B9EA8] pointer-events-none">

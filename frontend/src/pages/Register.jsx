@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiCheckSquare } from 'react-icons/fi';
 import api from '../api/client';
-import { isAuthenticated, setToken } from '../utils/auth';
+import { isAuthenticated } from '../utils/auth';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -58,9 +59,13 @@ export default function Register() {
       setApiError('');
       setIsLoading(true);
       const response = await api.post('/auth/register', { fullName: name, email, password });
-      const { token } = response.data.data;
-      setToken(token);
-      navigate('/dashboard');
+      setSuccessMessage(response.data.message || 'Registration successful. Please verify your email.');
+      setName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setAgreeTerms(false);
+      setErrors({});
     } catch (error) {
       setApiError(error?.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -96,6 +101,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {apiError && <p className="form-error-msg">{apiError}</p>}
+            {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
             {/* Name Field */}
             <div className="form-group">
               <label className="form-label" htmlFor="name">Full Name</label>

@@ -2,8 +2,18 @@ const express = require("express");
 const cors = require("cors");
 const { env } = require("./config/env");
 const healthRoutes = require("./routes/health.routes");
-const authRoutes = require("./routes/auth.routes");
-const dashboardRoutes = require("./routes/dashboard.routes");
+const {
+  register,
+  verifyEmail,
+  login,
+  forgotPassword,
+  resetPassword,
+  getMe,
+  updateProfile,
+  logout,
+} = require("./controllers/authController");
+const { getDashboard } = require("./controllers/dashboardController");
+const { protect } = require("./middleware/authMiddleware");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
 
@@ -26,8 +36,15 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/health", healthRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+app.post("/api/auth/register", register);
+app.get("/api/auth/verify-email", verifyEmail);
+app.post("/api/auth/login", login);
+app.post("/api/auth/forgot-password", forgotPassword);
+app.post("/api/auth/reset-password", resetPassword);
+app.post("/api/auth/logout", protect, logout);
+app.get("/api/auth/me", protect, getMe);
+app.put("/api/auth/me", protect, updateProfile);
+app.get("/api/dashboard", protect, getDashboard);
 
 app.use(notFound);
 app.use(errorHandler);
