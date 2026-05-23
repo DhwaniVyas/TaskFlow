@@ -1,4 +1,4 @@
-import React from 'react';
+import 'react';
 import { Routes, Route } from 'react-router-dom';
 import Landing from '../pages/Landing';
 import Login from '../pages/Login';
