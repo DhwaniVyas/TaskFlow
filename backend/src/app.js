@@ -17,6 +17,18 @@ const {
 } = require("./controllers/authController");
 
 const { getDashboard } = require("./controllers/dashboardController");
+const {
+  createTask,
+  getTasks,
+  getTaskById,
+  updateTask,
+  deleteTask,
+  searchTasks,
+  filterTasks,
+  sortTasks,
+  updateTaskStatus,
+  toggleSubtask,
+} = require("./controllers/taskController");
 
 const { protect } = require("./middleware/authMiddleware");
 const requestLogger = require("./middleware/requestLogger");
@@ -113,6 +125,18 @@ app.put("/api/auth/me", protect, updateProfile);
 
 // Dashboard
 app.get("/api/dashboard", protect, getDashboard);
+
+// Tasks
+app.post("/api/tasks", protect, createTask);
+app.get("/api/tasks", protect, getTasks);
+app.get("/api/tasks/search", protect, searchTasks);
+app.get("/api/tasks/filter", protect, filterTasks);
+app.get("/api/tasks/sort", protect, sortTasks);
+app.get("/api/tasks/:id", protect, getTaskById);
+app.put("/api/tasks/:id", protect, updateTask);
+app.delete("/api/tasks/:id", protect, deleteTask);
+app.patch("/api/tasks/:id/status", protect, updateTaskStatus);
+app.patch("/api/tasks/:id/subtasks", protect, toggleSubtask);
 
 /*
 |--------------------------------------------------------------------------

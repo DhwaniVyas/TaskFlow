@@ -20,7 +20,11 @@ function sanitizeUser(user) {
     role: user.role,
     provider: user.provider,
     avatar: user.avatar,
+    bio: user.bio,
+    timezone: user.timezone,
+    themePreference: user.themePreference,
     emailVerified: user.emailVerified,
+    lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -184,6 +188,8 @@ async function login(req, res, next) {
     }
 
     const token = generateToken({ userId: user._id });
+    user.lastLoginAt = new Date();
+    await user.save();
 
     res.status(200).json({
       success: true,
@@ -240,6 +246,12 @@ async function googleAuth(req, res, next) {
       if (!user.googleId) user.googleId = googleId;
       if (!user.avatar && avatar) user.avatar = avatar;
       if (!user.fullName && fullName) user.fullName = fullName;
+      user.lastLoginAt = new Date();
+      await user.save();
+    }
+
+    if (!user.lastLoginAt) {
+      user.lastLoginAt = new Date();
       await user.save();
     }
 
@@ -355,7 +367,8 @@ async function getMe(req, res, next) {
 
 async function updateProfile(req, res, next) {
   try {
-    const { fullName } = req.body;
+    const { fullName, avatar, bio, timezone, themePreference, password } = req.body;
+
     if (!fullName || !fullName.trim()) {
       res.status(400);
       throw new Error("fullName is required");
@@ -363,6 +376,30 @@ async function updateProfile(req, res, next) {
 
     const user = await User.findById(req.user._id);
     user.fullName = fullName.trim();
+    if (avatar !== undefined) user.avatar = String(avatar || "").trim();
+    if (bio !== undefined) {
+      if (String(bio).length > 300) {
+        res.status(400);
+        throw new Error("Bio must be at most 300 characters");
+      }
+      user.bio = String(bio || "").trim();
+    }
+    if (timezone !== undefined) user.timezone = String(timezone || "").trim() || user.timezone;
+    if (themePreference !== undefined) {
+      if (!["light", "dark", "system"].includes(themePreference)) {
+        res.status(400);
+        throw new Error("Invalid theme preference");
+      }
+      user.themePreference = themePreference;
+    }
+    if (password !== undefined && String(password).trim() !== "") {
+      if (String(password).length < 6) {
+        res.status(400);
+        throw new Error("Password must be at least 6 characters");
+      }
+      user.password = await bcrypt.hash(String(password), 10);
+    }
+
     await user.save();
 
     res.status(200).json({

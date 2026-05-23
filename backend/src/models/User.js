@@ -32,6 +32,27 @@ const userSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    bio: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 300,
+    },
+    timezone: {
+      type: String,
+      default: "Asia/Calcutta",
+      trim: true,
+      maxlength: 80,
+    },
+    themePreference: {
+      type: String,
+      enum: ["light", "dark", "system"],
+      default: "light",
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
     password: {
       type: String,
       required: function requiredPassword() {
