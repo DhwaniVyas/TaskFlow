@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiCheckSquare } from 'react-icons/fi';
 import api from '../api/client';
 import { isAuthenticated, setToken } from '../utils/auth';
+import GoogleAuthButton from '../components/auth/GoogleAuthButton';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -168,12 +169,11 @@ export default function Login() {
               </div>
             </div>
 
-            <button type="button" className="btn btn-secondary w-full py-2.5 flex items-center justify-center gap-2 text-xs font-semibold">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.24 10.285V13.4h6.887C18.2 15.614 15.645 18 12.24 18c-3.86 0-7-3.14-7-7s3.14-7 7-7c1.706 0 3.277.614 4.5 1.625l2.437-2.437C17.312 1.696 14.933 1 12.24 1 6.58 1 2 5.58 2 11.24s4.58 10.24 10.24 10.24c5.795 0 10.24-4.11 10.24-10.24 0-.614-.068-1.2-.205-1.755H12.24z"/>
-              </svg>
-              Google
-            </button>
+            <GoogleAuthButton
+              setLoading={setIsLoading}
+              onSuccess={() => navigate('/dashboard')}
+              onError={(message) => setApiError(message)}
+            />
           </div>
         </motion.div>
       </div>

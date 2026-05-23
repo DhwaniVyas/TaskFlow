@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiLogOut, FiCheckSquare, FiFolder, FiBarChart2, FiCheckCircle } from "react-icons/fi";
+import { googleLogout } from "@react-oauth/google";
 import api from "../api/client";
 import { clearToken } from "../utils/auth";
 
@@ -29,6 +30,7 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     api.post("/auth/logout").catch(() => {});
+    googleLogout();
     clearToken();
     navigate("/login");
   };

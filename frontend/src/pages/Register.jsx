@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiCheckSquare } from 'react-icons/fi';
 import api from '../api/client';
 import { isAuthenticated } from '../utils/auth';
+import GoogleAuthButton from '../components/auth/GoogleAuthButton';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -225,6 +226,23 @@ export default function Register() {
               )}
             </button>
           </form>
+
+          <div className="mt-8 text-center">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#C4E9ED]/50"></div>
+              </div>
+              <div className="relative text-xs text-[#5B9EA8] bg-white px-4 inline-block uppercase tracking-wider font-semibold">
+                Or continue with
+              </div>
+            </div>
+
+            <GoogleAuthButton
+              setLoading={setIsLoading}
+              onSuccess={() => navigate('/dashboard')}
+              onError={(message) => setApiError(message)}
+            />
+          </div>
         </motion.div>
       </div>
 

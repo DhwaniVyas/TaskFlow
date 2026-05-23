@@ -1,9 +1,12 @@
 const bcrypt = require("bcrypt");
+const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 const { createRandomToken, hashToken } = require("../utils/token");
 const { sendEmail } = require("../utils/mailer");
 const { env } = require("../config/env");
+
+const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
 function isValidEmail(email) {
   return /\S+@\S+\.\S+/.test(email);
@@ -15,6 +18,8 @@ function sanitizeUser(user) {
     fullName: user.fullName,
     email: user.email,
     role: user.role,
+    provider: user.provider,
+    avatar: user.avatar,
     emailVerified: user.emailVerified,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -162,6 +167,10 @@ async function login(req, res, next) {
       res.status(401);
       throw new Error("Invalid credentials");
     }
+    if (user.provider === "google") {
+      res.status(400);
+      throw new Error("This account uses Google sign-in. Continue with Google.");
+    }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
@@ -172,6 +181,66 @@ async function login(req, res, next) {
     if (!user.emailVerified) {
       res.status(403);
       throw new Error("Please verify your email before login");
+    }
+
+    const token = generateToken({ userId: user._id });
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        token,
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function googleAuth(req, res, next) {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      res.status(400);
+      throw new Error("Google credential is required");
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      res.status(401);
+      throw new Error("Invalid Google token payload");
+    }
+
+    const normalizedEmail = payload.email.toLowerCase().trim();
+    const fullName = payload.name || "Google User";
+    const avatar = payload.picture || "";
+    const googleId = payload.sub;
+
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      user = await User.create({
+        fullName,
+        email: normalizedEmail,
+        provider: "google",
+        googleId,
+        avatar,
+        emailVerified: true,
+      });
+    } else {
+      // Keep account continuity if user previously registered with email/password.
+      user.emailVerified = true;
+      if (!user.googleId) user.googleId = googleId;
+      if (!user.avatar && avatar) user.avatar = avatar;
+      if (!user.fullName && fullName) user.fullName = fullName;
+      await user.save();
     }
 
     const token = generateToken({ userId: user._id });
@@ -321,6 +390,7 @@ module.exports = {
   register,
   verifyEmail,
   login,
+  googleAuth,
   forgotPassword,
   resetPassword,
   getMe,

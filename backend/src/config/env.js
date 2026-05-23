@@ -16,6 +16,7 @@ const requiredVars = [
   "SMTP_USER",
   "SMTP_PASS",
   "MAIL_FROM",
+  "GOOGLE_CLIENT_ID",
 ];
 
 for (const key of requiredVars) {
@@ -39,6 +40,8 @@ const env = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   MAIL_FROM: process.env.MAIL_FROM,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
 };
 
 module.exports = { env };

@@ -8,6 +8,7 @@ const {
   register,
   verifyEmail,
   login,
+  googleAuth,
   forgotPassword,
   resetPassword,
   getMe,
@@ -98,6 +99,7 @@ app.post("/api/auth/register", register);
 app.get("/api/auth/verify-email", verifyEmail);
 
 app.post("/api/auth/login", login);
+app.post("/api/auth/google", googleAuth);
 
 app.post("/api/auth/forgot-password", forgotPassword);
 
