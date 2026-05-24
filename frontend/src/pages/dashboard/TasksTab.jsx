@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FiCheckCircle,
   FiChevronDown,
@@ -9,9 +9,11 @@ import {
   FiSearch,
   FiTrash2,
 } from "react-icons/fi";
-import { NavLink } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
+import BoardTab from "./BoardTab";
+import CalendarTab from "./CalendarTab";
 
 const initialTaskForm = {
   title: "",
@@ -38,12 +40,21 @@ function getDueLabel(dueDate, status) {
 }
 
 export default function TasksTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentView = (searchParams.get("view") || "list").toLowerCase();
+  const isListView = currentView === "list";
   const { taskState, setTaskState, showToast, refreshDashboard } = useDashboardWorkspace();
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [taskForm, setTaskForm] = useState(initialTaskForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState({});
+
+  useEffect(() => {
+    if (!["list", "board", "calendar"].includes(currentView)) {
+      setSearchParams({ view: "list" });
+    }
+  }, [currentView, setSearchParams]);
   const [debouncedSearch, setDebouncedSearch] = useState(taskState.search || "");
 
   useEffect(() => {
@@ -87,8 +98,8 @@ export default function TasksTab() {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, [debouncedSearch, taskState.statusFilter, taskState.priorityFilter, taskState.dueFilter, taskState.completedFilter, taskState.sortBy]);
+    if (isListView) fetchTasks();
+  }, [debouncedSearch, taskState.statusFilter, taskState.priorityFilter, taskState.dueFilter, taskState.completedFilter, taskState.sortBy, isListView]);
 
   const openCreateModal = () => {
     setEditingTask(null);
@@ -168,40 +179,34 @@ export default function TasksTab() {
     <div className="space-y-6">
       <section className="card p-6">
         <div className="mb-4 flex flex-wrap gap-2">
-          <NavLink
-            to="/dashboard/tasks"
-            className={({ isActive }) =>
-              `px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                isActive ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
-              }`
-            }
+          <button
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              currentView === "list" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+            }`}
+            onClick={() => setSearchParams({ view: "list" })}
           >
             List View
-          </NavLink>
-          <NavLink
-            to="/dashboard/board"
-            className={({ isActive }) =>
-              `px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                isActive ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
-              }`
-            }
+          </button>
+          <button
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              currentView === "board" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+            }`}
+            onClick={() => setSearchParams({ view: "board" })}
           >
             Kanban Board
-          </NavLink>
-          <NavLink
-            to="/dashboard/calendar"
-            className={({ isActive }) =>
-              `px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                isActive ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
-              }`
-            }
+          </button>
+          <button
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+              currentView === "calendar" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+            }`}
+            onClick={() => setSearchParams({ view: "calendar" })}
           >
             Calendar
-          </NavLink>
+          </button>
         </div>
 
         <h2 className="text-xl font-semibold text-[#082F38] mb-2">Tasks Workspace</h2>
-        <div className="grid md:grid-cols-5 gap-3">
+        {isListView && <div className="grid md:grid-cols-5 gap-3">
           <div className="md:col-span-2 relative">
             <FiSearch className="absolute left-3 top-3.5 text-[#5B9EA8]" />
             <input
@@ -230,8 +235,8 @@ export default function TasksTab() {
             <option value="overdue">Overdue</option>
             <option value="upcoming">Upcoming</option>
           </select>
-        </div>
-        <div className="mt-3 grid md:grid-cols-4 gap-3">
+        </div>}
+        {isListView && <div className="mt-3 grid md:grid-cols-4 gap-3">
           <select className="form-select" value={taskState.completedFilter} onChange={(e) => setTaskState((prev) => ({ ...prev, completedFilter: e.target.value }))}>
             <option value="" disabled>Completion Filter</option>
             <option value="true">Completed Only</option>
@@ -251,10 +256,10 @@ export default function TasksTab() {
             Reset Controls
           </button>
           <button className="btn btn-primary flex items-center justify-center gap-2" onClick={openCreateModal}><FiPlus /> Create Task</button>
-        </div>
+        </div>}
       </section>
 
-      <section className="card p-6">
+      {currentView === "list" && <section className="card p-6">
         <h3 className="text-xl font-semibold text-[#082F38] mb-4">Task List</h3>
         {tasksLoading ? (
           <p className="text-[#5B9EA8]">Loading tasks...</p>
@@ -309,7 +314,10 @@ export default function TasksTab() {
             })}
           </div>
         )}
-      </section>
+      </section>}
+
+      {currentView === "board" && <BoardTab />}
+      {currentView === "calendar" && <CalendarTab />}
 
       {showTaskModal && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">

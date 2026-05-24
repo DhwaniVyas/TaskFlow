@@ -15,8 +15,6 @@ export function useDashboardWorkspace() {
 const tabConfig = [
   { key: "overview", label: "Overview", path: "/dashboard/overview", comingSoon: false },
   { key: "tasks", label: "Tasks", path: "/dashboard/tasks", comingSoon: false },
-  { key: "board", label: "Board", path: "/dashboard/board", comingSoon: false },
-  { key: "calendar", label: "Calendar", path: "/dashboard/calendar", comingSoon: false },
   { key: "profile", label: "Profile", path: "/dashboard/profile", comingSoon: false },
   { key: "analytics", label: "Analytics", path: "/dashboard/analytics", comingSoon: true },
   { key: "notifications", label: "Notifications", path: "/dashboard/notifications", comingSoon: true },

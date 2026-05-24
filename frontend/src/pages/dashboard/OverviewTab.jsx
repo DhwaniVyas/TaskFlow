@@ -50,8 +50,8 @@ export default function OverviewTab() {
         <p className="text-sm text-[#5B9EA8] mt-1">Everything important at a glance.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link to="/dashboard/tasks" className="btn btn-primary">View All Tasks</Link>
-          <button onClick={() => navigate("/dashboard/board")} className="btn btn-secondary">Open Board</button>
-          <button onClick={() => navigate("/dashboard/calendar")} className="btn btn-secondary">Open Calendar</button>
+          <button onClick={() => navigate("/dashboard/tasks?view=board")} className="btn btn-secondary">Open Board</button>
+          <button onClick={() => navigate("/dashboard/tasks?view=calendar")} className="btn btn-secondary">Open Calendar</button>
           <button onClick={openProfileModal} className="btn btn-secondary">Edit Profile</button>
         </div>
       </section>
