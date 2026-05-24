@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
+const { recalcProjectProgress } = require("./projectController");
 
 const allowedStatus = ["todo", "in_progress", "completed"];
 const allowedPriority = ["low", "medium", "high"];
@@ -50,6 +51,9 @@ function validateTaskInput(body, isUpdate = false) {
     if (!Array.isArray(body.subtasks)) errors.push("Subtasks must be an array");
     else if (body.subtasks.length > 20) errors.push("Subtasks limit is 20");
   }
+  if (has("projectId") && body.projectId) {
+    if (!mongoose.Types.ObjectId.isValid(body.projectId)) errors.push("Invalid project id");
+  }
 
   return errors;
 }
@@ -73,6 +77,7 @@ async function createTask(req, res, next) {
       description: req.body.description?.trim() || "",
       status: req.body.status || "todo",
       priority: req.body.priority || "medium",
+      projectId: req.body.projectId || null,
       dueDate: req.body.dueDate || null,
       scheduledDate: req.body.scheduledDate || null,
       estimatedDuration: req.body.estimatedDuration ?? null,
@@ -81,6 +86,7 @@ async function createTask(req, res, next) {
         completed: Boolean(subtask.completed),
       })),
     });
+    await recalcProjectProgress(task.projectId);
 
     res.status(201).json({ success: true, message: "Task created", data: task });
   } catch (error) {
@@ -135,10 +141,12 @@ async function updateTask(req, res, next) {
       throw new Error("Task not found");
     }
 
+    const oldProjectId = task.projectId ? String(task.projectId) : null;
     if (req.body.title !== undefined) task.title = req.body.title.trim();
     if (req.body.description !== undefined) task.description = String(req.body.description || "").trim();
     if (req.body.status !== undefined) task.status = req.body.status;
     if (req.body.priority !== undefined) task.priority = req.body.priority;
+    if (req.body.projectId !== undefined) task.projectId = req.body.projectId || null;
     if (req.body.dueDate !== undefined) task.dueDate = req.body.dueDate || null;
     if (req.body.scheduledDate !== undefined) task.scheduledDate = req.body.scheduledDate || null;
     if (req.body.estimatedDuration !== undefined) task.estimatedDuration = req.body.estimatedDuration ?? null;
@@ -150,6 +158,12 @@ async function updateTask(req, res, next) {
     }
 
     await task.save();
+    if (oldProjectId !== (task.projectId ? String(task.projectId) : null)) {
+      await recalcProjectProgress(oldProjectId);
+      await recalcProjectProgress(task.projectId);
+    } else {
+      await recalcProjectProgress(task.projectId);
+    }
     res.status(200).json({ success: true, message: "Task updated", data: task });
   } catch (error) {
     next(error);
@@ -163,7 +177,9 @@ async function deleteTask(req, res, next) {
       res.status(404);
       throw new Error("Task not found");
     }
+    const projectId = task.projectId;
     await task.deleteOne();
+    await recalcProjectProgress(projectId);
     res.status(200).json({ success: true, message: "Task deleted" });
   } catch (error) {
     next(error);
@@ -264,6 +280,7 @@ async function updateTaskStatus(req, res, next) {
 
     task.status = status;
     await task.save();
+    await recalcProjectProgress(task.projectId);
     res.status(200).json({ success: true, message: "Task status updated", data: task });
   } catch (error) {
     next(error);

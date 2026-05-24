@@ -11,6 +11,9 @@ import VerifyEmail from '../pages/VerifyEmail';
 const DashboardLayout = lazy(() => import('../pages/dashboard/DashboardLayout'));
 const OverviewTab = lazy(() => import('../pages/dashboard/OverviewTab'));
 const TasksTab = lazy(() => import('../pages/dashboard/TasksTab'));
+const ProjectsTab = lazy(() => import('../pages/dashboard/ProjectsTab'));
+const AnalyticsTab = lazy(() => import('../pages/dashboard/AnalyticsTab'));
+const TeamTab = lazy(() => import('../pages/dashboard/TeamTab'));
 const ProfileTab = lazy(() => import('../pages/dashboard/ProfileTab'));
 const ComingSoonTab = lazy(() => import('../pages/dashboard/ComingSoonTab'));
 
@@ -29,11 +32,14 @@ export default function AppRoutes() {
             <Route index element={<Navigate to="/dashboard/overview" replace />} />
             <Route path="overview" element={<OverviewTab />} />
             <Route path="tasks" element={<TasksTab />} />
+            <Route path="projects" element={<ProjectsTab />} />
             <Route path="board" element={<Navigate to="/dashboard/tasks?view=board" replace />} />
             <Route path="calendar" element={<Navigate to="/dashboard/tasks?view=calendar" replace />} />
             <Route path="profile" element={<ProfileTab />} />
-            <Route path="analytics" element={<ComingSoonTab />} />
+            <Route path="analytics" element={<AnalyticsTab />} />
+            <Route path="team" element={<TeamTab />} />
             <Route path="notifications" element={<ComingSoonTab />} />
+            <Route path="ai" element={<ComingSoonTab />} />
             <Route path="settings" element={<ComingSoonTab />} />
           </Route>
         </Route>

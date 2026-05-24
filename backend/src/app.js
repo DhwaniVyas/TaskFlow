@@ -29,6 +29,23 @@ const {
   updateTaskStatus,
   toggleSubtask,
 } = require("./controllers/taskController");
+const {
+  createProject,
+  getProjects,
+  getProjectById,
+  updateProject,
+  archiveProject,
+  deleteProject,
+  linkTaskToProject,
+} = require("./controllers/projectController");
+const { getAnalytics } = require("./controllers/analyticsController");
+const {
+  inviteMember,
+  assignTask,
+  addComment,
+  getTaskComments,
+  getActivity,
+} = require("./controllers/teamController");
 
 const { protect } = require("./middleware/authMiddleware");
 const requestLogger = require("./middleware/requestLogger");
@@ -137,6 +154,25 @@ app.put("/api/tasks/:id", protect, updateTask);
 app.delete("/api/tasks/:id", protect, deleteTask);
 app.patch("/api/tasks/:id/status", protect, updateTaskStatus);
 app.patch("/api/tasks/:id/subtasks", protect, toggleSubtask);
+
+// Projects
+app.post("/api/projects", protect, createProject);
+app.get("/api/projects", protect, getProjects);
+app.get("/api/projects/:id", protect, getProjectById);
+app.put("/api/projects/:id", protect, updateProject);
+app.patch("/api/projects/:id/archive", protect, archiveProject);
+app.delete("/api/projects/:id", protect, deleteProject);
+app.patch("/api/projects/:id/link-task", protect, linkTaskToProject);
+
+// Analytics
+app.get("/api/analytics", protect, getAnalytics);
+
+// Team / Collaboration
+app.post("/api/team/invite", protect, inviteMember);
+app.post("/api/team/assign", protect, assignTask);
+app.post("/api/team/comments", protect, addComment);
+app.get("/api/team/comments/:taskId", protect, getTaskComments);
+app.get("/api/team/activity", protect, getActivity);
 
 /*
 |--------------------------------------------------------------------------

@@ -23,6 +23,7 @@ const initialTaskForm = {
   dueDate: "",
   scheduledDate: "",
   estimatedDuration: "",
+  projectId: "",
   subtasks: [],
 };
 
@@ -51,12 +52,24 @@ export default function TasksTab() {
   const [taskForm, setTaskForm] = useState(initialTaskForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState({});
+  const [projects, setProjects] = useState([]);
 
   useEffect(() => {
     if (!["list", "board", "calendar"].includes(currentView)) {
       setSearchParams({ view: "list" });
     }
   }, [currentView, setSearchParams]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get("/projects");
+        setProjects(data.data || []);
+      } catch {
+        setProjects([]);
+      }
+    })();
+  }, []);
   const [debouncedSearch, setDebouncedSearch] = useState(taskState.search || "");
 
   useEffect(() => {
@@ -135,6 +148,7 @@ export default function TasksTab() {
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
       scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
       estimatedDuration: task.estimatedDuration ?? "",
+      projectId: task.projectId || "",
       subtasks: (task.subtasks || []).map((s) => ({ title: s.title, completed: s.completed })),
     });
     setShowTaskModal(true);
@@ -149,6 +163,7 @@ export default function TasksTab() {
           taskForm.estimatedDuration === "" || taskForm.estimatedDuration === null
             ? null
             : Number(taskForm.estimatedDuration),
+        projectId: taskForm.projectId || null,
       };
       if (!editingTask && (!taskForm.priority || !taskForm.status)) {
         return showToast("Please select task priority and status.");
@@ -404,6 +419,12 @@ export default function TasksTab() {
                   onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
                 />
               </div>
+              <select className="form-select w-full" value={taskForm.projectId} onChange={(e) => setTaskForm((prev) => ({ ...prev, projectId: e.target.value }))}>
+                <option value="">No Project</option>
+                {projects.map((project) => (
+                  <option key={project._id} value={project._id}>{project.title}</option>
+                ))}
+              </select>
               <div>
                 <p className="text-sm font-medium text-[#082F38] mb-2">Subtasks</p>
                 <div className="space-y-2">
