@@ -21,6 +21,8 @@ const initialTaskForm = {
   priority: "",
   status: "",
   dueDate: "",
+  scheduledDate: "",
+  estimatedDuration: "",
   subtasks: [],
 };
 
@@ -101,6 +103,22 @@ export default function TasksTab() {
     if (isListView) fetchTasks();
   }, [debouncedSearch, taskState.statusFilter, taskState.priorityFilter, taskState.dueFilter, taskState.completedFilter, taskState.sortBy, isListView]);
 
+  useEffect(() => {
+    if (!isListView) {
+      (async () => {
+        try {
+          setTaskState((prev) => ({ ...prev, tasksLoading: true }));
+          const { data } = await api.get("/tasks");
+          setTaskState((prev) => ({ ...prev, tasks: data.data || [] }));
+        } catch (err) {
+          showToast(err?.response?.data?.message || "Failed to load tasks");
+        } finally {
+          setTaskState((prev) => ({ ...prev, tasksLoading: false }));
+        }
+      })();
+    }
+  }, [isListView]);
+
   const openCreateModal = () => {
     setEditingTask(null);
     setTaskForm(initialTaskForm);
@@ -115,6 +133,8 @@ export default function TasksTab() {
       priority: task.priority || "",
       status: task.status || "",
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
+      scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
+      estimatedDuration: task.estimatedDuration ?? "",
       subtasks: (task.subtasks || []).map((s) => ({ title: s.title, completed: s.completed })),
     });
     setShowTaskModal(true);
@@ -123,14 +143,21 @@ export default function TasksTab() {
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...taskForm,
+        estimatedDuration:
+          taskForm.estimatedDuration === "" || taskForm.estimatedDuration === null
+            ? null
+            : Number(taskForm.estimatedDuration),
+      };
       if (!editingTask && (!taskForm.priority || !taskForm.status)) {
         return showToast("Please select task priority and status.");
       }
       if (editingTask) {
-        await api.put(`/tasks/${editingTask._id}`, taskForm);
+        await api.put(`/tasks/${editingTask._id}`, payload);
         showToast("Task updated");
       } else {
-        await api.post("/tasks", taskForm);
+        await api.post("/tasks", payload);
         showToast("Task created");
       }
       setShowTaskModal(false);
@@ -206,7 +233,7 @@ export default function TasksTab() {
         </div>
 
         <h2 className="text-xl font-semibold text-[#082F38] mb-2">Tasks Workspace</h2>
-        {isListView && <div className="grid md:grid-cols-5 gap-3">
+        <div className="grid md:grid-cols-5 gap-3">
           <div className="md:col-span-2 relative">
             <FiSearch className="absolute left-3 top-3.5 text-[#5B9EA8]" />
             <input
@@ -235,8 +262,8 @@ export default function TasksTab() {
             <option value="overdue">Overdue</option>
             <option value="upcoming">Upcoming</option>
           </select>
-        </div>}
-        {isListView && <div className="mt-3 grid md:grid-cols-4 gap-3">
+        </div>
+        <div className="mt-3 grid md:grid-cols-4 gap-3">
           <select className="form-select" value={taskState.completedFilter} onChange={(e) => setTaskState((prev) => ({ ...prev, completedFilter: e.target.value }))}>
             <option value="" disabled>Completion Filter</option>
             <option value="true">Completed Only</option>
@@ -256,7 +283,7 @@ export default function TasksTab() {
             Reset Controls
           </button>
           <button className="btn btn-primary flex items-center justify-center gap-2" onClick={openCreateModal}><FiPlus /> Create Task</button>
-        </div>}
+        </div>
       </section>
 
       {currentView === "list" && <section className="card p-6">
@@ -316,8 +343,28 @@ export default function TasksTab() {
         )}
       </section>}
 
-      {currentView === "board" && <BoardTab />}
-      {currentView === "calendar" && <CalendarTab />}
+      {currentView === "board" && (
+        <BoardTab
+          tasks={tasks}
+          loading={tasksLoading}
+          showToast={showToast}
+          onRefresh={async () => {
+            await Promise.all([fetchTasks(), refreshDashboard()]);
+          }}
+          onEditTask={openEditModal}
+        />
+      )}
+      {currentView === "calendar" && (
+        <CalendarTab
+          tasks={tasks}
+          loading={tasksLoading}
+          showToast={showToast}
+          onRefresh={async () => {
+            await Promise.all([fetchTasks(), refreshDashboard()]);
+          }}
+          onEditTask={openEditModal}
+        />
+      )}
 
       {showTaskModal && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
@@ -340,6 +387,22 @@ export default function TasksTab() {
                   <option value="completed">Completed</option>
                 </select>
                 <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  className="form-input"
+                  value={taskForm.scheduledDate}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  className="form-input"
+                  placeholder="Estimated duration (hours)"
+                  value={taskForm.estimatedDuration}
+                  onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
+                />
               </div>
               <div>
                 <p className="text-sm font-medium text-[#082F38] mb-2">Subtasks</p>

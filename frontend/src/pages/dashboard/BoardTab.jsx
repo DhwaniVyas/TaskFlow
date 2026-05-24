@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { FiClock, FiEdit2, FiTrash2 } from "react-icons/fi";
 import api from "../../api/client";
-import { useDashboardWorkspace } from "./DashboardLayout";
 
 const columns = [
   { key: "todo", title: "Todo" },
@@ -15,27 +14,8 @@ function dueText(task) {
   return d.toLocaleDateString();
 }
 
-export default function BoardTab() {
-  const { showToast, refreshDashboard } = useDashboardWorkspace();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function BoardTab({ tasks = [], loading = false, onRefresh, onEditTask, showToast }) {
   const [dragTaskId, setDragTaskId] = useState(null);
-
-  const fetchBoardTasks = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get("/tasks");
-      setTasks(data.data || []);
-    } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to load board");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBoardTasks();
-  }, []);
 
   const grouped = useMemo(() => {
     const map = { todo: [], in_progress: [], completed: [] };
@@ -54,10 +34,10 @@ export default function BoardTab() {
     if (!dragTaskId) return;
     try {
       await api.patch(`/tasks/${dragTaskId}/status`, { status: nextStatus });
-      await Promise.all([fetchBoardTasks(), refreshDashboard()]);
-      showToast("Task moved");
+      await onRefresh?.();
+      showToast?.("Task moved");
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to move task");
+      showToast?.(err?.response?.data?.message || "Failed to move task");
     } finally {
       setDragTaskId(null);
     }
@@ -66,22 +46,10 @@ export default function BoardTab() {
   const quickDelete = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
-      await Promise.all([fetchBoardTasks(), refreshDashboard()]);
-      showToast("Task deleted");
+      await onRefresh?.();
+      showToast?.("Task deleted");
     } catch (err) {
-      showToast(err?.response?.data?.message || "Delete failed");
-    }
-  };
-
-  const quickEdit = async (task) => {
-    const title = window.prompt("Edit task title", task.title);
-    if (!title || title.trim().length < 3) return;
-    try {
-      await api.put(`/tasks/${task._id}`, { ...task, title: title.trim() });
-      await fetchBoardTasks();
-      showToast("Task updated");
-    } catch (err) {
-      showToast(err?.response?.data?.message || "Update failed");
+      showToast?.(err?.response?.data?.message || "Delete failed");
     }
   };
 
@@ -104,7 +72,7 @@ export default function BoardTab() {
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-[#082F38]">{column.title}</h3>
-              <span className="text-xs text-[#5B9EA8]">{grouped[column.key].length} tasks â€¢ {completionPercent(column.key)}%</span>
+              <span className="text-xs text-[#5B9EA8]">{grouped[column.key].length} tasks • {completionPercent(column.key)}%</span>
             </div>
 
             <div className="space-y-3">
@@ -126,7 +94,7 @@ export default function BoardTab() {
                     <div className="text-xs text-[#5B9EA8] mt-2 flex items-center gap-1"><FiClock /> {dueText(task)}</div>
                     <div className="text-xs text-[#5B9EA8] mt-1">Subtasks: {done}/{subtasks.length}</div>
                     <div className="mt-3 flex gap-2">
-                      <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => quickEdit(task)}><FiEdit2 /></button>
+                      <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => onEditTask?.(task)}><FiEdit2 /></button>
                       <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => quickDelete(task._id)}><FiTrash2 /></button>
                     </div>
                   </div>
@@ -145,3 +113,4 @@ export default function BoardTab() {
     </div>
   );
 }
+
