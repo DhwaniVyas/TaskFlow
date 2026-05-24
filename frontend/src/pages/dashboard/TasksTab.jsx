@@ -9,6 +9,7 @@ import {
   FiSearch,
   FiTrash2,
 } from "react-icons/fi";
+import { NavLink } from "react-router-dom";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
 
@@ -166,6 +167,39 @@ export default function TasksTab() {
   return (
     <div className="space-y-6">
       <section className="card p-6">
+        <div className="mb-4 flex flex-wrap gap-2">
+          <NavLink
+            to="/dashboard/tasks"
+            className={({ isActive }) =>
+              `px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                isActive ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+              }`
+            }
+          >
+            List View
+          </NavLink>
+          <NavLink
+            to="/dashboard/board"
+            className={({ isActive }) =>
+              `px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                isActive ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+              }`
+            }
+          >
+            Kanban Board
+          </NavLink>
+          <NavLink
+            to="/dashboard/calendar"
+            className={({ isActive }) =>
+              `px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                isActive ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+              }`
+            }
+          >
+            Calendar
+          </NavLink>
+        </div>
+
         <h2 className="text-xl font-semibold text-[#082F38] mb-2">Tasks Workspace</h2>
         <div className="grid md:grid-cols-5 gap-3">
           <div className="md:col-span-2 relative">

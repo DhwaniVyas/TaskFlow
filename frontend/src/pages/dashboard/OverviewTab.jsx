@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FiBarChart2, FiCheckCircle, FiCheckSquare, FiClock, FiPlayCircle, FiUser } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
 
@@ -12,8 +12,10 @@ function formatDate(dateString) {
 }
 
 export default function OverviewTab() {
+  const navigate = useNavigate();
   const { dashboardData, openProfileModal } = useDashboardWorkspace();
   const [latestTasks, setLatestTasks] = useState([]);
+  const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(true);
 
   useEffect(() => {
@@ -21,9 +23,16 @@ export default function OverviewTab() {
       try {
         setPreviewLoading(true);
         const { data } = await api.get("/tasks");
-        setLatestTasks((data.data || []).slice(0, 5));
+        const rows = data.data || [];
+        setLatestTasks(rows.slice(0, 5));
+        const next = rows
+          .filter((t) => t.dueDate && t.status !== "completed")
+          .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+          .slice(0, 5);
+        setUpcomingTasks(next);
       } catch {
         setLatestTasks([]);
+        setUpcomingTasks([]);
       } finally {
         setPreviewLoading(false);
       }
@@ -41,6 +50,8 @@ export default function OverviewTab() {
         <p className="text-sm text-[#5B9EA8] mt-1">Everything important at a glance.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link to="/dashboard/tasks" className="btn btn-primary">View All Tasks</Link>
+          <button onClick={() => navigate("/dashboard/board")} className="btn btn-secondary">Open Board</button>
+          <button onClick={() => navigate("/dashboard/calendar")} className="btn btn-secondary">Open Calendar</button>
           <button onClick={openProfileModal} className="btn btn-secondary">Edit Profile</button>
         </div>
       </section>
@@ -68,12 +79,28 @@ export default function OverviewTab() {
         </div>
 
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-[#082F38]">Recent Activity</h3>
+          <h3 className="text-lg font-semibold text-[#082F38]">Upcoming Deadlines</h3>
           <div className="mt-4 space-y-3 text-sm">
-            <p className="flex items-center gap-2 text-[#5B9EA8]"><FiUser /> Profile ready for updates</p>
-            <p className="flex items-center gap-2 text-[#5B9EA8]"><FiCheckSquare /> Task workspace active</p>
-            <p className="flex items-center gap-2 text-[#5B9EA8]"><FiClock /> Last login: {formatDate(user.lastLoginAt)}</p>
+            {upcomingTasks.length === 0 ? (
+              <p className="text-[#5B9EA8]">No upcoming deadlines.</p>
+            ) : (
+              upcomingTasks.map((task) => (
+                <div key={task._id} className="flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-[#5B9EA8]"><FiClock /> {task.title}</p>
+                  <span className="text-xs text-[#082F38] font-medium">{new Date(task.dueDate).toLocaleDateString()}</span>
+                </div>
+              ))
+            )}
           </div>
+        </div>
+      </section>
+
+      <section className="card p-6">
+        <h3 className="text-lg font-semibold text-[#082F38]">Recent Activity</h3>
+        <div className="mt-4 space-y-3 text-sm">
+          <p className="flex items-center gap-2 text-[#5B9EA8]"><FiUser /> Profile ready for updates</p>
+          <p className="flex items-center gap-2 text-[#5B9EA8]"><FiCheckSquare /> Task workspace active</p>
+          <p className="flex items-center gap-2 text-[#5B9EA8]"><FiClock /> Last login: {formatDate(user.lastLoginAt)}</p>
         </div>
       </section>
 

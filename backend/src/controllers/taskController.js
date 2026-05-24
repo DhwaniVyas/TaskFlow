@@ -38,6 +38,14 @@ function validateTaskInput(body, isUpdate = false) {
     const dueDate = new Date(body.dueDate);
     if (Number.isNaN(dueDate.getTime())) errors.push("Invalid due date");
   }
+  if (has("scheduledDate") && body.scheduledDate) {
+    const scheduledDate = new Date(body.scheduledDate);
+    if (Number.isNaN(scheduledDate.getTime())) errors.push("Invalid scheduled date");
+  }
+  if (has("estimatedDuration") && body.estimatedDuration !== null && body.estimatedDuration !== undefined) {
+    const duration = Number(body.estimatedDuration);
+    if (Number.isNaN(duration) || duration < 0) errors.push("estimatedDuration must be a positive number");
+  }
   if (has("subtasks")) {
     if (!Array.isArray(body.subtasks)) errors.push("Subtasks must be an array");
     else if (body.subtasks.length > 20) errors.push("Subtasks limit is 20");
@@ -66,6 +74,8 @@ async function createTask(req, res, next) {
       status: req.body.status || "todo",
       priority: req.body.priority || "medium",
       dueDate: req.body.dueDate || null,
+      scheduledDate: req.body.scheduledDate || null,
+      estimatedDuration: req.body.estimatedDuration ?? null,
       subtasks: (req.body.subtasks || []).map((subtask) => ({
         title: String(subtask.title || "").trim(),
         completed: Boolean(subtask.completed),
@@ -80,8 +90,19 @@ async function createTask(req, res, next) {
 
 async function getTasks(req, res, next) {
   try {
-    const tasks = await Task.find({ user: req.user._id }).sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: tasks });
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 100);
+    const skip = (page - 1) * limit;
+
+    const [tasks, total] = await Promise.all([
+      Task.find({ user: req.user._id }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Task.countDocuments({ user: req.user._id }),
+    ]);
+    res.status(200).json({
+      success: true,
+      data: tasks,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     next(error);
   }
@@ -119,6 +140,8 @@ async function updateTask(req, res, next) {
     if (req.body.status !== undefined) task.status = req.body.status;
     if (req.body.priority !== undefined) task.priority = req.body.priority;
     if (req.body.dueDate !== undefined) task.dueDate = req.body.dueDate || null;
+    if (req.body.scheduledDate !== undefined) task.scheduledDate = req.body.scheduledDate || null;
+    if (req.body.estimatedDuration !== undefined) task.estimatedDuration = req.body.estimatedDuration ?? null;
     if (req.body.subtasks !== undefined) {
       task.subtasks = req.body.subtasks.map((subtask) => ({
         title: String(subtask.title || "").trim(),

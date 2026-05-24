@@ -56,6 +56,16 @@ const taskSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    scheduledDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    estimatedDuration: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
     subtasks: {
       type: [subtaskSchema],
       default: [],
@@ -76,5 +86,6 @@ taskSchema.index({ user: 1, title: 1 });
 taskSchema.index({ user: 1, status: 1 });
 taskSchema.index({ user: 1, priority: 1 });
 taskSchema.index({ user: 1, dueDate: 1 });
+taskSchema.index({ user: 1, scheduledDate: 1 });
 
 module.exports = mongoose.model("Task", taskSchema);
