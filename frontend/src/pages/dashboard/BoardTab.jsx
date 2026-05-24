@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiClock, FiEdit2, FiTrash2 } from "react-icons/fi";
 import api from "../../api/client";
 
@@ -72,7 +72,7 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-[#082F38]">{column.title}</h3>
-              <span className="text-xs text-[#5B9EA8]">{grouped[column.key].length} tasks • {completionPercent(column.key)}%</span>
+              <span className="text-xs text-[#5B9EA8]">{grouped[column.key].length} tasks ï¿½ {completionPercent(column.key)}%</span>
             </div>
 
             <div className="space-y-3">
