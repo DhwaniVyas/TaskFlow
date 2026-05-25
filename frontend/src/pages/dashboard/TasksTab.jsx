@@ -16,6 +16,7 @@ import BoardTab from "./BoardTab";
 import CalendarTab from "./CalendarTab";
 
 const initialTaskForm = {
+  taskScope: "self",
   title: "",
   description: "",
   category: "",
@@ -25,6 +26,7 @@ const initialTaskForm = {
   scheduledDate: "",
   estimatedDuration: "",
   projectId: "",
+  assignedTo: "",
   subtasks: [],
 };
 
@@ -47,13 +49,20 @@ export default function TasksTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentView = (searchParams.get("view") || "list").toLowerCase();
   const isListView = currentView === "list";
-  const { taskState, setTaskState, showToast, refreshDashboard } = useDashboardWorkspace();
+  const { taskState, setTaskState, showToast, refreshDashboard, dashboardData } = useDashboardWorkspace();
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [taskForm, setTaskForm] = useState(initialTaskForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState({});
   const [projects, setProjects] = useState([]);
+  const userId = dashboardData?.user?.id;
+  const ownedProjects = projects.filter((project) => {
+    const ownerId = typeof project.owner === "string" ? project.owner : project.owner?._id;
+    return ownerId === userId;
+  });
+  const selectedOwnedProject = ownedProjects.find((project) => project._id === taskForm.projectId);
+  const projectMembers = (selectedOwnedProject?.members || []).filter((member) => member.status === "accepted");
 
   useEffect(() => {
     if (!["list", "board", "calendar"].includes(currentView)) {
@@ -142,6 +151,7 @@ export default function TasksTab() {
   const openEditModal = (task) => {
     setEditingTask(task);
     setTaskForm({
+      taskScope: task.projectId ? "project" : "self",
       title: task.title || "",
       description: task.description || "",
       category: task.category || "",
@@ -151,6 +161,7 @@ export default function TasksTab() {
       scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
       estimatedDuration: task.estimatedDuration ?? "",
       projectId: task.projectId || "",
+      assignedTo: task.assignedTo || "",
       subtasks: (task.subtasks || []).map((s) => ({ title: s.title, completed: s.completed })),
     });
     setShowTaskModal(true);
@@ -165,8 +176,15 @@ export default function TasksTab() {
           taskForm.estimatedDuration === "" || taskForm.estimatedDuration === null
             ? null
             : Number(taskForm.estimatedDuration),
-        projectId: taskForm.projectId || null,
+        projectId: taskForm.taskScope === "project" ? taskForm.projectId || null : null,
+        assignedTo: taskForm.taskScope === "project" ? taskForm.assignedTo || null : null,
       };
+      if (taskForm.taskScope === "project" && !taskForm.projectId) {
+        return showToast("Please choose one of your projects.");
+      }
+      if (taskForm.taskScope === "project" && !taskForm.assignedTo) {
+        return showToast("Please choose a collaborator for this project task.");
+      }
       if (!editingTask && (!taskForm.priority || !taskForm.status)) {
         return showToast("Please select task priority and status.");
       }
@@ -222,7 +240,7 @@ export default function TasksTab() {
   return (
     <div className="space-y-6">
       <section className="card p-6">
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-5 flex flex-wrap gap-2">
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               currentView === "list" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
@@ -249,9 +267,9 @@ export default function TasksTab() {
           </button>
         </div>
 
-        <h2 className="text-xl font-semibold text-[#082F38] mb-2">Tasks Workspace</h2>
-        <div className="grid md:grid-cols-5 gap-3">
-          <div className="md:col-span-2 relative">
+        <h2 className="text-xl font-semibold text-[#082F38] mb-4">Tasks Workspace</h2>
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+          <div className="relative">
             <FiSearch className="absolute left-3 top-3.5 text-[#5B9EA8]" />
             <input
               className="form-input w-full !pl-10"
@@ -280,7 +298,7 @@ export default function TasksTab() {
             <option value="upcoming">Upcoming</option>
           </select>
         </div>
-        <div className="mt-3 grid md:grid-cols-4 gap-3">
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           <select className="form-select" value={taskState.completedFilter} onChange={(e) => setTaskState((prev) => ({ ...prev, completedFilter: e.target.value }))}>
             <option value="" disabled>Completion Filter</option>
             <option value="true">Completed Only</option>
@@ -320,6 +338,8 @@ export default function TasksTab() {
               const expanded = !!expandedTaskIds[task._id];
               const dueLabel = getDueLabel(task.dueDate, task.status);
               const projectColor = projects.find((p) => p._id === task.projectId)?.color || null;
+              const isOwnedProjectTask = task.projectId && ownedProjects.some((project) => project._id === task.projectId);
+              const canEditTask = !task.projectId || isOwnedProjectTask;
               return (
                 <div key={task._id} className="border rounded-xl p-4 bg-white" style={{ borderColor: projectColor || "#C4E9ED80" }}>
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -340,8 +360,8 @@ export default function TasksTab() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button className="btn btn-secondary" onClick={() => openEditModal(task)}><FiEdit2 /></button>
-                      <button className="btn btn-secondary" onClick={() => setDeleteTarget(task)}><FiTrash2 /></button>
+                      {canEditTask && <button className="btn btn-secondary" onClick={() => openEditModal(task)}><FiEdit2 /></button>}
+                      {canEditTask && <button className="btn btn-secondary" onClick={() => setDeleteTarget(task)}><FiTrash2 /></button>}
                       {task.status !== "completed" && <button className="btn btn-primary" onClick={() => handleMarkComplete(task)}>Mark Complete</button>}
                       <button className="btn btn-ghost" onClick={() => setExpandedTaskIds((prev) => ({ ...prev, [task._id]: !prev[task._id] }))}>{expanded ? <FiChevronUp /> : <FiChevronDown />}</button>
                     </div>
@@ -392,12 +412,55 @@ export default function TasksTab() {
 
       {showTaskModal && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
-          <div className="bg-[var(--surface)] rounded-xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto border border-[var(--line-soft)]">
+          <div className="bg-[var(--surface)] rounded-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto border border-[var(--line-soft)]">
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{editingTask ? "Edit Task" : "Create Task"}</h3>
-            <form onSubmit={handleTaskSubmit} className="space-y-3">
+            <form onSubmit={handleTaskSubmit} className="space-y-5">
+              <div className="grid md:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  className={`rounded-xl border px-4 py-3 text-left transition-colors ${taskForm.taskScope === "self" ? "border-[#0E7490] bg-[#F0F9FA]" : "border-[var(--line-soft)] bg-[var(--surface)]"}`}
+                  onClick={() => setTaskForm((prev) => ({ ...prev, taskScope: "self", projectId: "", assignedTo: "" }))}
+                >
+                  <p className="font-semibold text-[#082F38]">Self Task</p>
+                  <p className="text-xs text-[#5B9EA8] mt-1">Independent work visible only in your personal task space.</p>
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-xl border px-4 py-3 text-left transition-colors ${taskForm.taskScope === "project" ? "border-[#0E7490] bg-[#F0F9FA]" : "border-[var(--line-soft)] bg-[var(--surface)]"}`}
+                  onClick={() => setTaskForm((prev) => ({ ...prev, taskScope: "project" }))}
+                >
+                  <p className="font-semibold text-[#082F38]">Project Task</p>
+                  <p className="text-xs text-[#5B9EA8] mt-1">Create work inside one of your projects and assign it to a collaborator.</p>
+                </button>
+              </div>
               <input className="form-input w-full" placeholder="Title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
               <textarea className="form-textarea w-full" rows={3} placeholder="Description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
-              <div className="grid md:grid-cols-4 gap-3">
+              {taskForm.taskScope === "project" && (
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-[#5B9EA8]">Project Name</p>
+                    <select className="form-select" value={taskForm.projectId} onChange={(e) => setTaskForm((prev) => ({ ...prev, projectId: e.target.value, assignedTo: "" }))} required>
+                      <option value="">Select Your Project</option>
+                      {ownedProjects.map((project) => (
+                        <option key={project._id} value={project._id}>{project.title}</option>
+                      ))}
+                    </select>
+                    {ownedProjects.length === 0 && <p className="text-xs text-[#DC2626]">Create your own project first to add a project-based task.</p>}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-[#5B9EA8]">Assign To</p>
+                    <select className="form-select" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))} required>
+                      <option value="">Select Collaborator</option>
+                      {projectMembers.map((member) => (
+                        <option key={member.user?._id || member.email} value={member.user?._id || ""}>
+                          {member.role === "owner" ? `${member.user?.fullName || member.email} (Head)` : member.user?.fullName || member.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+              <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
                 <select className="form-select" value={taskForm.category} onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))}>
                   <option value="" disabled>Select Category</option>
                   <option value="Work">Work</option>
@@ -447,12 +510,6 @@ export default function TasksTab() {
                   />
                 </div>
               </div>
-              <select className="form-select w-full" value={taskForm.projectId} onChange={(e) => setTaskForm((prev) => ({ ...prev, projectId: e.target.value }))}>
-                <option value="">No Project</option>
-                {projects.map((project) => (
-                  <option key={project._id} value={project._id}>{project.title}</option>
-                ))}
-              </select>
               <div>
                 <p className="text-sm font-medium text-[#082F38] mb-2">Subtasks</p>
                 <div className="space-y-2">

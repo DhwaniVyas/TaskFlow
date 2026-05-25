@@ -91,6 +91,12 @@ async function hasProjectAccess(projectId, userId) {
   return Boolean(project);
 }
 
+async function isProjectOwner(projectId, userId) {
+  if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) return false;
+  const project = await Project.findOne({ _id: projectId, owner: userId }).select("_id");
+  return Boolean(project);
+}
+
 async function createTask(req, res, next) {
   try {
     const errors = validateTaskInput(req.body, false);
@@ -99,9 +105,9 @@ async function createTask(req, res, next) {
       throw new Error(errors.join(", "));
     }
 
-    if (req.body.projectId && !(await hasProjectAccess(req.body.projectId, req.user._id))) {
+    if (req.body.projectId && !(await isProjectOwner(req.body.projectId, req.user._id))) {
       res.status(403);
-      throw new Error("You do not have access to this project");
+      throw new Error("Only the project head can create project tasks");
     }
 
     const task = await Task.create({
@@ -191,9 +197,14 @@ async function updateTask(req, res, next) {
       throw new Error("Task not found");
     }
 
-    if (req.body.projectId && !(await hasProjectAccess(req.body.projectId, req.user._id))) {
+    if (req.body.projectId && !(await isProjectOwner(req.body.projectId, req.user._id))) {
       res.status(403);
-      throw new Error("You do not have access to this project");
+      throw new Error("Only the project head can move tasks into this project");
+    }
+
+    if (task.projectId && !(await isProjectOwner(task.projectId, req.user._id))) {
+      res.status(403);
+      throw new Error("Only the project head can edit project tasks");
     }
 
     const oldProjectId = task.projectId ? String(task.projectId) : null;
@@ -238,6 +249,10 @@ async function deleteTask(req, res, next) {
     if (!task) {
       res.status(404);
       throw new Error("Task not found");
+    }
+    if (task.projectId && !(await isProjectOwner(task.projectId, req.user._id))) {
+      res.status(403);
+      throw new Error("Only the project head can delete project tasks");
     }
     const projectId = task.projectId;
     await task.deleteOne();
@@ -369,6 +384,10 @@ async function toggleSubtask(req, res, next) {
     if (!task) {
       res.status(404);
       throw new Error("Task not found");
+    }
+    if (task.projectId && !(await isProjectOwner(task.projectId, req.user._id))) {
+      res.status(403);
+      throw new Error("Only the project head can edit subtasks");
     }
 
     const subtask = task.subtasks.id(subtaskId);

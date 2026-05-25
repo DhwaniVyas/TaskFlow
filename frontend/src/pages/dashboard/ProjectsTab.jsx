@@ -23,7 +23,7 @@ const initialProjectTask = {
 };
 
 export default function ProjectsTab() {
-  const { showToast } = useDashboardWorkspace();
+  const { showToast, dashboardData } = useDashboardWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,7 @@ export default function ProjectsTab() {
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [comments, setComments] = useState([]);
   const [commentMessage, setCommentMessage] = useState("");
+  const userId = dashboardData?.user?.id;
 
   const fetchProjects = async () => {
     try {
@@ -94,6 +95,7 @@ export default function ProjectsTab() {
   }, [searchParams, setSearchParams]);
 
   const acceptedMembers = (openProject?.project?.members || []).filter((member) => member.status === "accepted");
+  const isProjectHead = openProject ? openProject.project.owner?._id === userId : false;
 
   const openCreateProject = () => {
     setEditingProject(null);
@@ -283,33 +285,24 @@ export default function ProjectsTab() {
           projects.map((project) => {
             const acceptedCount = (project.members || []).filter((member) => member.status === "accepted").length;
             const pendingCount = (project.members || []).filter((member) => member.status === "pending").length;
+            const headName = project.owner?.fullName || "Project Head";
             return (
-              <div key={project._id} className="card p-5">
-                <div className="flex items-start justify-between gap-3">
+              <div key={project._id} className="card p-5" style={{ borderColor: `${project.color}55` }}>
+                <div className="h-1.5 rounded-full mb-4" style={{ background: project.color }} />
+                <div className="space-y-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#082F38]">{project.title}</h3>
-                    <p className="text-sm text-[#5B9EA8] mt-1">{project.description || "No description"}</p>
+                    <h3 className="text-lg font-semibold" style={{ color: project.color }}>{project.title}</h3>
+                    <p className="text-sm text-[#5B9EA8] mt-1 line-clamp-3">{project.description || "No description"}</p>
                   </div>
-                  <span className="text-[10px] uppercase tracking-wide px-2 py-1 rounded" style={{ background: `${project.color}20`, color: project.color }}>
-                    {project.status}
-                  </span>
-                </div>
-                <div className="mt-4 space-y-2 text-xs text-[#5B9EA8]">
-                  <p>Members: {acceptedCount} accepted | {pendingCount} pending</p>
-                  <p>Start: {project.startDate ? new Date(project.startDate).toLocaleDateString() : "N/A"}</p>
-                  <p>Deadline: {project.targetDate ? new Date(project.targetDate).toLocaleDateString() : "N/A"}</p>
-                </div>
-                <div className="mt-4">
-                  <div className="h-2 rounded-full bg-[#E2E8F0] overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${project.progress || 0}%`, background: project.color }} />
+                  <div className="text-sm text-[#5B9EA8]">
+                    <p>Head: <span className="font-medium text-[#082F38]">{headName}</span></p>
                   </div>
-                  <p className="text-xs text-[#5B9EA8] mt-2">Progress: {project.progress || 0}%</p>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap gap-2">
                   <button className="btn btn-secondary !text-xs" onClick={() => fetchProjectDetails(project._id)}>Open</button>
-                  <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(project)}>Edit</button>
-                  <button className="btn btn-secondary !text-xs" onClick={() => archiveProject(project._id)}>Archive</button>
-                  <button className="btn btn-accent !text-xs" onClick={() => deleteProject(project._id)}>Delete</button>
+                  {project.owner?._id === userId && <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(project)}>Edit</button>}
+                  {project.owner?._id === userId && <button className="btn btn-secondary !text-xs" onClick={() => archiveProject(project._id)}>Archive</button>}
+                  {project.owner?._id === userId && <button className="btn btn-accent !text-xs" onClick={() => deleteProject(project._id)}>Delete</button>}
                 </div>
               </div>
             );
@@ -319,21 +312,25 @@ export default function ProjectsTab() {
 
       <section className="card p-6">
         <h3 className="text-lg font-semibold text-[#082F38]">Invite Member</h3>
-        <form onSubmit={sendInvite} className="grid md:grid-cols-4 gap-3 mt-3">
-          <select className="form-select" value={invite.projectId} onChange={(e) => setInvite((prev) => ({ ...prev, projectId: e.target.value }))} required>
-            <option value="">Select Project</option>
-            {projects.map((project) => (
-              <option key={project._id} value={project._id}>{project.title}</option>
-            ))}
-          </select>
-          <input className="form-input" type="email" placeholder="Collaborator email" value={invite.email} onChange={(e) => setInvite((prev) => ({ ...prev, email: e.target.value }))} required />
-          <select className="form-select" value={invite.role} onChange={(e) => setInvite((prev) => ({ ...prev, role: e.target.value }))}>
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-            <option value="viewer">Viewer</option>
-          </select>
-          <button className="btn btn-primary" type="submit">Send Invite</button>
-        </form>
+        {projects.filter((project) => project.owner?._id === userId).length === 0 ? (
+          <p className="text-sm text-[#5B9EA8] mt-3">Create a project as head first, then invite collaborators by email.</p>
+        ) : (
+          <form onSubmit={sendInvite} className="grid md:grid-cols-4 gap-3 mt-3">
+            <select className="form-select" value={invite.projectId} onChange={(e) => setInvite((prev) => ({ ...prev, projectId: e.target.value }))} required>
+              <option value="">Select Project</option>
+              {projects.filter((project) => project.owner?._id === userId).map((project) => (
+                <option key={project._id} value={project._id}>{project.title}</option>
+              ))}
+            </select>
+            <input className="form-input" type="email" placeholder="Collaborator email" value={invite.email} onChange={(e) => setInvite((prev) => ({ ...prev, email: e.target.value }))} required />
+            <select className="form-select" value={invite.role} onChange={(e) => setInvite((prev) => ({ ...prev, role: e.target.value }))}>
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <button className="btn btn-primary" type="submit">Send Invite</button>
+          </form>
+        )}
       </section>
 
       {showProjectModal && (
@@ -367,25 +364,41 @@ export default function ProjectsTab() {
       )}
 
       {openProject && (
-        <section className="space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4 py-6">
+          <div className="bg-[var(--surface)] rounded-2xl w-full max-w-7xl max-h-[92vh] overflow-y-auto border border-[var(--line-soft)]">
+            <div className="p-6 border-b" style={{ borderColor: `${openProject.project.color}55` }}>
+              <div className="h-1.5 rounded-full mb-5" style={{ background: openProject.project.color }} />
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-semibold" style={{ color: openProject.project.color }}>{openProject.project.title}</h3>
+                  <p className="text-sm text-[#5B9EA8] mt-1">{openProject.project.description || "No description"}</p>
+                  <div className="flex flex-wrap gap-3 mt-3 text-xs text-[#5B9EA8]">
+                    <span>Head: {openProject.project.owner?.fullName || "N/A"}</span>
+                    <span>Collaborators: {Math.max(acceptedMembers.length - 1, 0)}</span>
+                    <span>Start: {openProject.project.startDate ? new Date(openProject.project.startDate).toLocaleDateString() : "N/A"}</span>
+                    <span>Deadline: {openProject.project.targetDate ? new Date(openProject.project.targetDate).toLocaleDateString() : "N/A"}</span>
+                  </div>
+                </div>
+                <button className="btn btn-secondary" onClick={() => setOpenProject(null)}>Close</button>
+              </div>
+            </div>
+
+            <div className="p-6">
           <div className="card p-6" style={{ borderColor: openProject.project.color }}>
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-semibold text-[#082F38]">{openProject.project.title}</h3>
-                <p className="text-sm text-[#5B9EA8] mt-1">{openProject.project.description || "No description"}</p>
-                <div className="flex flex-wrap gap-3 mt-3 text-xs text-[#5B9EA8]">
-                  <span>Start: {openProject.project.startDate ? new Date(openProject.project.startDate).toLocaleDateString() : "N/A"}</span>
-                  <span>Deadline: {openProject.project.targetDate ? new Date(openProject.project.targetDate).toLocaleDateString() : "N/A"}</span>
-                  <span>Accepted Members: {acceptedMembers.length}</span>
-                </div>
+                <h4 className="text-lg font-semibold text-[#082F38]">Project Details</h4>
+                <p className="text-sm text-[#5B9EA8] mt-1">Everyone in this project can view the same information, tasks, and discussion.</p>
               </div>
-              <button className="btn btn-secondary" onClick={() => setOpenProject(null)}>Close Workspace</button>
+              <span className="text-xs font-semibold uppercase tracking-wide px-3 py-2 rounded-full" style={{ background: `${openProject.project.color}20`, color: openProject.project.color }}>
+                {openProject.project.status}
+              </span>
             </div>
           </div>
 
           <div className="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-4">
             <div className="space-y-4">
-              <div className="card p-6">
+              {isProjectHead && <div className="card p-6">
                 <h4 className="text-lg font-semibold text-[#082F38] mb-4">{editingTaskId ? "Edit Project Task" : "Create Project Task"}</h4>
                 <form onSubmit={saveProjectTask} className="space-y-3">
                   <input className="form-input w-full" placeholder="Task title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
@@ -437,7 +450,7 @@ export default function ProjectsTab() {
                     <button type="submit" className="btn btn-primary">{editingTaskId ? "Save Task" : "Create Task"}</button>
                   </div>
                 </form>
-              </div>
+              </div>}
 
               <div className="card p-6">
                 <h4 className="text-lg font-semibold text-[#082F38] mb-4">Project Tasks</h4>
@@ -464,15 +477,15 @@ export default function ProjectsTab() {
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              <button className="btn btn-secondary !text-xs" onClick={() => beginTaskEdit(task)}>Edit</button>
-                              <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>
+                              {isProjectHead && <button className="btn btn-secondary !text-xs" onClick={() => beginTaskEdit(task)}>Edit</button>}
+                              {task.status !== "completed" && <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>}
                               <button className="btn btn-secondary !text-xs" onClick={() => {
                                 setSelectedTaskId(task._id);
                                 fetchComments(task._id);
                               }}>
                                 Discuss
                               </button>
-                              <button className="btn btn-accent !text-xs" onClick={() => deleteTask(task._id)}>Delete</button>
+                              {isProjectHead && <button className="btn btn-accent !text-xs" onClick={() => deleteTask(task._id)}>Delete</button>}
                             </div>
                           </div>
                         </div>
@@ -490,7 +503,7 @@ export default function ProjectsTab() {
                   {(openProject.project.members || []).map((member, index) => (
                     <div key={`${member.email}-${index}`} className="rounded-lg border border-[#E2E8F0] p-3">
                       <p className="font-medium text-[#082F38]">{member.user?.fullName || member.email}</p>
-                      <p className="text-xs text-[#5B9EA8]">{member.role} | {member.status}</p>
+                      <p className="text-xs text-[#5B9EA8]">{member.role === "owner" ? "Head" : "Collaborator"} | {member.status}</p>
                     </div>
                   ))}
                 </div>
@@ -525,7 +538,9 @@ export default function ProjectsTab() {
               </div>
             </div>
           </div>
-        </section>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
