@@ -134,7 +134,7 @@ export default function ProjectsTab() {
                 </span>
               </div>
               <p className="text-sm text-[#5B9EA8] mt-1">{project.description || "No description"}</p>
-              <div className="mt-3 text-xs text-[#5B9EA8]">Members: {(project.members || []).length} | Tasks: {(project.tasks || []).length}</div>
+              <div className="mt-3 text-xs text-[#5B9EA8]">Members: {(project.members || []).length} • Tasks: {(project.tasks || []).length}</div>
               <div className="mt-2 text-xs text-[#5B9EA8]">Deadline: {project.targetDate ? new Date(project.targetDate).toLocaleDateString() : "N/A"}</div>
               <div className="mt-3">
                 <div className="h-2 rounded bg-[#E2F4F6] overflow-hidden"><div className="h-full" style={{ width: `${project.progress || 0}%`, background: project.color }} /></div>
@@ -198,7 +198,7 @@ export default function ProjectsTab() {
                   openProject.tasks.map((task) => (
                     <div key={task._id} className="border border-[#E2F4F6] rounded p-2 text-sm">
                       <p className="font-medium text-[#082F38]">{task.title}</p>
-                      <p className="text-xs text-[#5B9EA8]">{task.status.replace("_", " ")} | {task.priority}</p>
+                      <p className="text-xs text-[#5B9EA8]">{task.status.replace("_", " ")} • {task.priority}</p>
                     </div>
                   ))
                 )}
@@ -210,7 +210,7 @@ export default function ProjectsTab() {
                 {(openProject.project.members || []).map((m, idx) => (
                   <div key={`${m.user?._id || idx}-${idx}`} className="border border-[#E2F4F6] rounded p-2 text-sm">
                     <p className="font-medium text-[#082F38]">{m.user?.fullName || "Member"}</p>
-                    <p className="text-xs text-[#5B9EA8]">{m.user?.email || "N/A"} | {m.role}</p>
+                    <p className="text-xs text-[#5B9EA8]">{m.user?.email || "N/A"} • {m.role}</p>
                   </div>
                 ))}
               </div>
