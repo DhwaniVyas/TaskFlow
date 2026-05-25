@@ -28,8 +28,8 @@
 /* --- Reset & Base Elements --- */
 body {
   font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--color-mist-50);
-  color: var(--color-mist-900);
+  background: var(--app-bg);
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -120,43 +120,43 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--color-mist-600);
+  background-color: var(--brand-primary);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: var(--color-mist-800);
+  background-color: color-mix(in srgb, var(--brand-primary) 85%, black);
   box-shadow: 0 4px 6px rgba(8, 47, 56, 0.08);
 }
 
 .btn-accent {
-  background-color: var(--color-coral-500);
+  background-color: var(--brand-accent);
   color: #ffffff;
 }
 
 .btn-accent:hover {
-  background-color: var(--color-coral-700);
+  background-color: color-mix(in srgb, var(--brand-accent) 84%, black);
   box-shadow: 0 4px 6px rgba(124, 45, 18, 0.12);
 }
 
 .btn-secondary {
-  background-color: #ffffff;
-  border-color: var(--color-mist-200);
-  color: var(--color-mist-900);
+  background-color: var(--surface);
+  border-color: var(--line-soft);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-mist-50);
-  border-color: var(--color-mist-300);
+  background-color: var(--surface-subtle);
+  border-color: var(--brand-secondary);
 }
 
 .btn-ghost {
   background-color: transparent;
-  color: var(--color-mist-900);
+  color: var(--text-primary);
 }
 
 .btn-ghost:hover {
-  background-color: var(--color-mist-100);
+  background-color: var(--surface-subtle);
 }
 
 .btn:disabled {
@@ -203,7 +203,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-mist-900);
+  color: var(--text-primary);
 }
 
 .form-input, .form-select, .form-textarea {
@@ -211,9 +211,9 @@ body {
   font-size: 14px;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-mist-300);
-  background-color: #ffffff;
-  color: var(--color-mist-900);
+  border: 1px solid var(--line-soft);
+  background-color: var(--surface);
+  color: var(--text-primary);
   transition: all 0.2s ease;
   outline: none;
 }
@@ -228,12 +228,12 @@ body {
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--color-mist-600);
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+  border-color: var(--brand-secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-secondary) 18%, transparent);
 }
 
 .form-input::placeholder, .form-textarea::placeholder {
-  color: #5B9EA8;
+  color: var(--text-muted);
   opacity: 0.7;
 }
 

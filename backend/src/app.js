@@ -41,6 +41,7 @@ const {
   acceptProjectInvite,
 } = require("./controllers/projectController");
 const { getAnalytics } = require("./controllers/analyticsController");
+const { assignTask, addComment, getTaskComments } = require("./controllers/teamController");
 
 const { protect } = require("./middleware/authMiddleware");
 const requestLogger = require("./middleware/requestLogger");
@@ -149,6 +150,9 @@ app.put("/api/tasks/:id", protect, updateTask);
 app.delete("/api/tasks/:id", protect, deleteTask);
 app.patch("/api/tasks/:id/status", protect, updateTaskStatus);
 app.patch("/api/tasks/:id/subtasks", protect, toggleSubtask);
+app.patch("/api/tasks/:taskId/assign", protect, assignTask);
+app.post("/api/tasks/:taskId/comments", protect, addComment);
+app.get("/api/tasks/:taskId/comments", protect, getTaskComments);
 
 // Projects
 app.post("/api/projects", protect, createProject);

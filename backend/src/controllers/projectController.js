@@ -150,7 +150,7 @@ async function deleteProject(req, res, next) {
       res.status(404);
       throw new Error("Project not found or not owned by user");
     }
-    await Task.updateMany({ projectId: project._id, user: req.user._id }, { $set: { projectId: null } });
+    await Task.updateMany({ projectId: project._id }, { $set: { projectId: null, assignedTo: null, assignedBy: null, assignedAt: null } });
     await project.deleteOne();
     res.status(200).json({ success: true, message: "Project deleted" });
   } catch (error) {

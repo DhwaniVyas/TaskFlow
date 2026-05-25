@@ -324,13 +324,18 @@ export default function TasksTab() {
                 <div key={task._id} className="border rounded-xl p-4 bg-white" style={{ borderColor: projectColor || "#C4E9ED80" }}>
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                     <div>
-                      <h4 className="text-base font-semibold text-[#082F38]">{task.title}</h4>
+                      <h4 className="text-base font-semibold" style={{ color: projectColor || "#082F38" }}>{task.title}</h4>
                       <p className="text-sm text-[#5B9EA8] mt-1">{task.description || "No description"}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}>{task.status.replace("_", " ")}</span>
+                        <span
+                          className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}
+                          style={projectColor ? { borderColor: projectColor, color: projectColor } : undefined}
+                        >
+                          {task.status.replace("_", " ")}
+                        </span>
                         <span className="badge badge-status-due-soon">{task.priority}</span>
                         <span className={`text-xs flex items-center gap-1 ${dueLabel === "Overdue" ? "text-[#DC2626] font-semibold" : "text-[#5B9EA8]"}`}><FiClock /> {dueLabel}</span>
-                        <span className="text-xs text-[#4F46E5]">{task.category || "General"}</span>
+                        <span className="text-xs font-medium" style={{ color: projectColor || "#4F46E5" }}>{task.category || "General"}</span>
                         <span className="text-xs text-[#5B9EA8]">{doneSubtasks}/{subtasks.length} subtasks</span>
                       </div>
                     </div>
@@ -387,8 +392,8 @@ export default function TasksTab() {
 
       {showTaskModal && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
-          <div className="bg-white rounded-xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-[#082F38] mb-4">{editingTask ? "Edit Task" : "Create Task"}</h3>
+          <div className="bg-[var(--surface)] rounded-xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto border border-[var(--line-soft)]">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{editingTask ? "Edit Task" : "Create Task"}</h3>
             <form onSubmit={handleTaskSubmit} className="space-y-3">
               <input className="form-input w-full" placeholder="Title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
               <textarea className="form-textarea w-full" rows={3} placeholder="Description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
@@ -415,23 +420,32 @@ export default function TasksTab() {
                   <option value="in_progress">In Progress</option>
                   <option value="completed">Completed</option>
                 </select>
-                <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
+                <div className="space-y-1">
+                  <p className="text-xs text-[#5B9EA8]">Deadline</p>
+                  <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
+                </div>
               </div>
               <div className="grid md:grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  className="form-input"
-                  value={taskForm.scheduledDate}
-                  onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  className="form-input"
-                  placeholder="Estimated duration (hours)"
-                  value={taskForm.estimatedDuration}
-                  onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
-                />
+                <div className="space-y-1">
+                  <p className="text-xs text-[#5B9EA8]">Scheduled Date (Optional)</p>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={taskForm.scheduledDate}
+                    onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-[#5B9EA8]">Estimated Duration (Hours)</p>
+                  <input
+                    type="number"
+                    min="0"
+                    className="form-input"
+                    placeholder="Estimated duration (hours)"
+                    value={taskForm.estimatedDuration}
+                    onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
+                  />
+                </div>
               </div>
               <select className="form-select w-full" value={taskForm.projectId} onChange={(e) => setTaskForm((prev) => ({ ...prev, projectId: e.target.value }))}>
                 <option value="">No Project</option>
@@ -480,8 +494,8 @@ export default function TasksTab() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
-          <div className="bg-white rounded-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-[#082F38] mb-2">Delete Task</h3>
+          <div className="bg-[var(--surface)] rounded-xl w-full max-w-md p-6 border border-[var(--line-soft)]">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Delete Task</h3>
             <p className="text-sm text-[#5B9EA8]">Are you sure you want to delete "{deleteTarget.title}"?</p>
             <div className="flex justify-end gap-2 mt-5">
               <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>

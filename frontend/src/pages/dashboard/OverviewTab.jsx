@@ -10,7 +10,7 @@ function formatDate(dateString) {
 }
 
 export default function OverviewTab() {
-  const { dashboardData, openProfileModal } = useDashboardWorkspace();
+  const { dashboardData } = useDashboardWorkspace();
 
   const user = dashboardData?.user || {};
   const overview = dashboardData?.overview || {};
@@ -28,10 +28,10 @@ export default function OverviewTab() {
         <div className="card p-5"><p className="text-xs text-[#5B9EA8] mb-2">Completion %</p><p className="text-2xl font-bold text-[#082F38] flex items-center gap-2"><FiBarChart2 /> {overview.completionRate || 0}%</p></div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-4">
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-[#082F38]">Account Summary</h3>
-          <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-sm">
             <div><p className="text-[#5B9EA8]">Name</p><p className="font-medium text-[#082F38]">{user.fullName}</p></div>
             <div><p className="text-[#5B9EA8]">Email</p><p className="font-medium text-[#082F38]">{user.email}</p></div>
             <div><p className="text-[#5B9EA8]">Provider</p><p className="font-medium text-[#082F38]">{user.provider === "google" ? "Google" : "Local"}</p></div>

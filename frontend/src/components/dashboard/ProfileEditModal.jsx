@@ -64,8 +64,8 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold text-[#082F38] mb-4">Edit Profile</h3>
+      <div className="bg-[var(--surface)] rounded-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto border border-[var(--line-soft)]">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Profile</h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -76,15 +76,15 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
           <div className="grid md:grid-cols-2 gap-3">
             <div>
               <label className="form-label">Email (Read Only)</label>
-              <input className="form-input w-full bg-gray-50" value={user?.email || ""} readOnly />
+              <input className="form-input w-full !bg-[var(--surface-subtle)]" value={user?.email || ""} readOnly />
             </div>
             <div>
               <label className="form-label">Provider (Read Only)</label>
-              <input className="form-input w-full bg-gray-50" value={accountType} readOnly />
+              <input className="form-input w-full !bg-[var(--surface-subtle)]" value={accountType} readOnly />
             </div>
             <div>
               <label className="form-label">Joined Date (Read Only)</label>
-              <input className="form-input w-full bg-gray-50" value={formatDate(user?.createdAt)} readOnly />
+              <input className="form-input w-full !bg-[var(--surface-subtle)]" value={formatDate(user?.createdAt)} readOnly />
             </div>
             <div>
               <label className="form-label">Full Name</label>

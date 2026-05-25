@@ -6,7 +6,7 @@ async function getDashboard(req, res, next) {
   try {
     const now = new Date();
     const taskAccessQuery = {
-      $or: [{ creator: req.user._id, projectId: null }, { assignedTo: req.user._id }],
+      $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }],
     };
     const totalTasks = await Task.countDocuments(taskAccessQuery);
     const completed = await Task.countDocuments({ ...taskAccessQuery, status: "completed" });
@@ -47,6 +47,7 @@ async function getDashboard(req, res, next) {
           bio: req.user.bio,
           timezone: req.user.timezone,
           themePreference: req.user.themePreference,
+          notificationPreferences: req.user.notificationPreferences,
           emailVerified: req.user.emailVerified,
           createdAt: req.user.createdAt,
           lastLoginAt: req.user.lastLoginAt,

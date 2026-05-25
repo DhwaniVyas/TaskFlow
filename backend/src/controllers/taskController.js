@@ -59,16 +59,26 @@ function validateTaskInput(body, isUpdate = false) {
   if (has("projectId") && body.projectId) {
     if (!mongoose.Types.ObjectId.isValid(body.projectId)) errors.push("Invalid project id");
   }
+  if (has("assignedTo") && body.assignedTo) {
+    if (!mongoose.Types.ObjectId.isValid(body.assignedTo)) errors.push("Invalid assignee id");
+  }
 
   return errors;
 }
 
 async function findOwnedTask(taskId, userId) {
   if (!mongoose.Types.ObjectId.isValid(taskId)) return null;
-  return Task.findOne({
-    _id: taskId,
-    $or: [{ creator: userId }, { user: userId }, { assignedTo: userId }],
-  });
+  const task = await Task.findById(taskId);
+  if (!task) return null;
+
+  const directAccess =
+    String(task.creator || "") === String(userId) ||
+    String(task.user || "") === String(userId) ||
+    String(task.assignedTo || "") === String(userId);
+
+  if (directAccess) return task;
+  if (task.projectId && (await hasProjectAccess(task.projectId, userId))) return task;
+  return null;
 }
 
 async function hasProjectAccess(projectId, userId) {
@@ -103,6 +113,9 @@ async function createTask(req, res, next) {
       status: req.body.status || "todo",
       priority: req.body.priority || "medium",
       projectId: req.body.projectId || null,
+      assignedTo: req.body.assignedTo || null,
+      assignedBy: req.body.assignedTo ? req.user._id : null,
+      assignedAt: req.body.assignedTo ? new Date() : null,
       dueDate: req.body.dueDate || null,
       scheduledDate: req.body.scheduledDate || null,
       estimatedDuration: req.body.estimatedDuration ?? null,
@@ -191,6 +204,11 @@ async function updateTask(req, res, next) {
     if (req.body.status !== undefined) task.status = req.body.status;
     if (req.body.priority !== undefined) task.priority = req.body.priority;
     if (req.body.projectId !== undefined) task.projectId = req.body.projectId || null;
+    if (req.body.assignedTo !== undefined) {
+      task.assignedTo = req.body.assignedTo || null;
+      task.assignedBy = req.body.assignedTo ? req.user._id : null;
+      task.assignedAt = req.body.assignedTo ? new Date() : null;
+    }
     if (req.body.dueDate !== undefined) task.dueDate = req.body.dueDate || null;
     if (req.body.scheduledDate !== undefined) task.scheduledDate = req.body.scheduledDate || null;
     if (req.body.estimatedDuration !== undefined) task.estimatedDuration = req.body.estimatedDuration ?? null;
