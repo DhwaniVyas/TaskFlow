@@ -240,7 +240,7 @@ export default function TasksTab() {
   return (
     <div className="space-y-6">
       <section className="card p-6">
-        <div className="mb-5 flex flex-wrap gap-2">
+        <div className="equal-split-row compact md:max-w-3xl" style={{ "--split-count": 3 }}>
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               currentView === "list" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
@@ -268,7 +268,7 @@ export default function TasksTab() {
         </div>
 
         <h2 className="text-xl font-semibold text-[#082F38] mb-4">Tasks Workspace</h2>
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+        <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
           <div className="relative">
             <FiSearch className="absolute left-3 top-3.5 text-[#5B9EA8]" />
             <input
@@ -298,7 +298,7 @@ export default function TasksTab() {
             <option value="upcoming">Upcoming</option>
           </select>
         </div>
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="equal-split-row relaxed mt-3" style={{ "--split-count": 4 }}>
           <select className="form-select" value={taskState.completedFilter} onChange={(e) => setTaskState((prev) => ({ ...prev, completedFilter: e.target.value }))}>
             <option value="" disabled>Completion Filter</option>
             <option value="true">Completed Only</option>
@@ -340,6 +340,7 @@ export default function TasksTab() {
               const projectColor = projects.find((p) => p._id === task.projectId)?.color || null;
               const isOwnedProjectTask = task.projectId && ownedProjects.some((project) => project._id === task.projectId);
               const canEditTask = !task.projectId || isOwnedProjectTask;
+              const actionCount = [canEditTask, canEditTask, task.status !== "completed", true].filter(Boolean).length;
               return (
                 <div key={task._id} className="border rounded-xl p-4 bg-white" style={{ borderColor: projectColor || "#C4E9ED80" }}>
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -359,7 +360,7 @@ export default function TasksTab() {
                         <span className="text-xs text-[#5B9EA8]">{doneSubtasks}/{subtasks.length} subtasks</span>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="equal-split-row compact w-full md:w-auto" style={{ "--split-count": actionCount }}>
                       {canEditTask && <button className="btn btn-secondary" onClick={() => openEditModal(task)}><FiEdit2 /></button>}
                       {canEditTask && <button className="btn btn-secondary" onClick={() => setDeleteTarget(task)}><FiTrash2 /></button>}
                       {task.status !== "completed" && <button className="btn btn-primary" onClick={() => handleMarkComplete(task)}>Mark Complete</button>}

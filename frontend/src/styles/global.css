@@ -420,6 +420,32 @@ body {
   gap: 24px;
 }
 
+/* Equal split rows: each item takes an even fraction of the line */
+.equal-split-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.equal-split-row > * {
+  min-width: 0;
+}
+
+.equal-split-row.compact > * {
+  font-size: clamp(0.74rem, 0.7rem + 0.14vw, 0.92rem);
+}
+
+.equal-split-row.relaxed > * {
+  font-size: clamp(0.82rem, 0.76rem + 0.2vw, 1rem);
+}
+
+@media (min-width: 768px) {
+  .equal-split-row {
+    grid-template-columns: repeat(var(--split-count, 1), minmax(0, 1fr));
+  }
+}
+
 /* Animations & Micro-interactions */
 .hover-lift {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);

@@ -19,7 +19,7 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+      <section className="equal-split-row relaxed" style={{ "--split-count": 6 }}>
         <div className="card p-5"><p className="text-xs text-[#5B9EA8] mb-2">Total Tasks</p><p className="text-2xl font-bold text-[#082F38] flex items-center gap-2"><FiCheckSquare /> {overview.totalTasks || 0}</p></div>
         <div className="card p-5"><p className="text-xs text-[#5B9EA8] mb-2">Completed</p><p className="text-2xl font-bold text-[#082F38] flex items-center gap-2"><FiCheckCircle /> {overview.completedTasks || 0}</p></div>
         <div className="card p-5"><p className="text-xs text-[#5B9EA8] mb-2">Pending</p><p className="text-2xl font-bold text-[#082F38]">{overview.pendingTasks || 0}</p></div>
@@ -28,10 +28,10 @@ export default function OverviewTab() {
         <div className="card p-5"><p className="text-xs text-[#5B9EA8] mb-2">Completion %</p><p className="text-2xl font-bold text-[#082F38] flex items-center gap-2"><FiBarChart2 /> {overview.completionRate || 0}%</p></div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-4">
+      <section className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-[#082F38]">Account Summary</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-sm">
+          <div className="equal-split-row relaxed mt-4 text-sm" style={{ "--split-count": 2 }}>
             <div><p className="text-[#5B9EA8]">Name</p><p className="font-medium text-[#082F38]">{user.fullName}</p></div>
             <div><p className="text-[#5B9EA8]">Email</p><p className="font-medium text-[#082F38]">{user.email}</p></div>
             <div><p className="text-[#5B9EA8]">Provider</p><p className="font-medium text-[#082F38]">{user.provider === "google" ? "Google" : "Local"}</p></div>
@@ -42,7 +42,7 @@ export default function OverviewTab() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <section className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-[#082F38]">Upcoming Deadlines</h3>
           <div className="mt-4 space-y-2 text-sm">

@@ -298,7 +298,7 @@ export default function ProjectsTab() {
                     <p>Head: <span className="font-medium text-[#082F38]">{headName}</span></p>
                   </div>
                 </div>
-                <div className="mt-5 flex flex-wrap gap-2">
+                <div className="equal-split-row compact mt-5" style={{ "--split-count": project.owner?._id === userId ? 4 : 1 }}>
                   <button className="btn btn-secondary !text-xs" onClick={() => fetchProjectDetails(project._id)}>Open</button>
                   {project.owner?._id === userId && <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(project)}>Edit</button>}
                   {project.owner?._id === userId && <button className="btn btn-secondary !text-xs" onClick={() => archiveProject(project._id)}>Archive</button>}
@@ -315,7 +315,7 @@ export default function ProjectsTab() {
         {projects.filter((project) => project.owner?._id === userId).length === 0 ? (
           <p className="text-sm text-[#5B9EA8] mt-3">Create a project as head first, then invite collaborators by email.</p>
         ) : (
-          <form onSubmit={sendInvite} className="grid md:grid-cols-4 gap-3 mt-3">
+          <form onSubmit={sendInvite} className="equal-split-row relaxed mt-3" style={{ "--split-count": 4 }}>
             <select className="form-select" value={invite.projectId} onChange={(e) => setInvite((prev) => ({ ...prev, projectId: e.target.value }))} required>
               <option value="">Select Project</option>
               {projects.filter((project) => project.owner?._id === userId).map((project) => (
@@ -403,7 +403,7 @@ export default function ProjectsTab() {
                 <form onSubmit={saveProjectTask} className="space-y-3">
                   <input className="form-input w-full" placeholder="Task title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
                   <textarea className="form-textarea w-full" rows={3} placeholder="Task description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
-                  <div className="grid md:grid-cols-4 gap-3">
+                  <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
                     <select className="form-select" value={taskForm.category} onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))} required>
                       <option value="">Select Category</option>
                       <option value="Work">Work</option>
@@ -435,7 +435,7 @@ export default function ProjectsTab() {
                       ))}
                     </select>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-3">
+                  <div className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
                     <div className="space-y-1">
                       <p className="text-xs text-[#5B9EA8]">Deadline</p>
                       <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
@@ -445,7 +445,7 @@ export default function ProjectsTab() {
                       <input type="date" className="form-input" value={taskForm.scheduledDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))} />
                     </div>
                   </div>
-                  <div className="flex gap-2 justify-end">
+                  <div className="equal-split-row compact md:ml-auto md:max-w-sm" style={{ "--split-count": editingTaskId ? 2 : 1 }}>
                     {editingTaskId && <button type="button" className="btn btn-secondary" onClick={resetTaskComposer}>Cancel Edit</button>}
                     <button type="submit" className="btn btn-primary">{editingTaskId ? "Save Task" : "Create Task"}</button>
                   </div>
@@ -476,7 +476,7 @@ export default function ProjectsTab() {
                                 <span className="text-[#5B9EA8]">Assigned: {assignee?.user?.fullName || "Unassigned"}</span>
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="equal-split-row compact w-full lg:w-auto" style={{ "--split-count": isProjectHead ? 4 : 2 }}>
                               {isProjectHead && <button className="btn btn-secondary !text-xs" onClick={() => beginTaskEdit(task)}>Edit</button>}
                               {task.status !== "completed" && <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>}
                               <button className="btn btn-secondary !text-xs" onClick={() => {
