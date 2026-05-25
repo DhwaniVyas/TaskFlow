@@ -38,6 +38,7 @@ export default function ProjectsTab() {
   const [comments, setComments] = useState([]);
   const [commentMessage, setCommentMessage] = useState("");
   const userId = dashboardData?.user?.id;
+  const headedProjects = projects.filter((project) => project.owner?._id === userId);
 
   const fetchProjects = async () => {
     try {
@@ -271,6 +272,7 @@ export default function ProjectsTab() {
           <div>
             <h2 className="text-xl font-semibold text-[#082F38]">Projects Workspace</h2>
             <p className="text-sm text-[#5B9EA8] mt-1">Create projects, invite collaborators, assign work, and discuss tasks inside the same workspace.</p>
+            <p className="text-xs text-[#5B9EA8] mt-2">This list includes projects you head and projects you joined after accepting an invitation.</p>
           </div>
           <button className="btn btn-primary" onClick={openCreateProject}>Create Project</button>
         </div>
@@ -283,9 +285,8 @@ export default function ProjectsTab() {
           <div className="card p-6 text-[#5B9EA8]">No projects yet. Create your first project.</div>
         ) : (
           projects.map((project) => {
-            const acceptedCount = (project.members || []).filter((member) => member.status === "accepted").length;
-            const pendingCount = (project.members || []).filter((member) => member.status === "pending").length;
             const headName = project.owner?.fullName || "Project Head";
+            const isHeadProject = project.owner?._id === userId;
             return (
               <div key={project._id} className="card p-5" style={{ borderColor: `${project.color}55` }}>
                 <div className="h-1.5 rounded-full mb-4" style={{ background: project.color }} />
@@ -298,11 +299,11 @@ export default function ProjectsTab() {
                     <p>Head: <span className="font-medium text-[#082F38]">{headName}</span></p>
                   </div>
                 </div>
-                <div className="equal-split-row compact mt-5" style={{ "--split-count": project.owner?._id === userId ? 4 : 1 }}>
+                <div className="equal-split-row compact mt-5" style={{ "--split-count": isHeadProject ? 4 : 1 }}>
                   <button className="btn btn-secondary !text-xs" onClick={() => fetchProjectDetails(project._id)}>Open</button>
-                  {project.owner?._id === userId && <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(project)}>Edit</button>}
-                  {project.owner?._id === userId && <button className="btn btn-secondary !text-xs" onClick={() => archiveProject(project._id)}>Archive</button>}
-                  {project.owner?._id === userId && <button className="btn btn-accent !text-xs" onClick={() => deleteProject(project._id)}>Delete</button>}
+                  {isHeadProject && <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(project)}>Edit</button>}
+                  {isHeadProject && <button className="btn btn-secondary !text-xs" onClick={() => archiveProject(project._id)}>Archive</button>}
+                  {isHeadProject && <button className="btn btn-accent !text-xs" onClick={() => deleteProject(project._id)}>Delete</button>}
                 </div>
               </div>
             );
@@ -312,13 +313,13 @@ export default function ProjectsTab() {
 
       <section className="card p-6">
         <h3 className="text-lg font-semibold text-[#082F38]">Invite Member</h3>
-        {projects.filter((project) => project.owner?._id === userId).length === 0 ? (
+        {headedProjects.length === 0 ? (
           <p className="text-sm text-[#5B9EA8] mt-3">Create a project as head first, then invite collaborators by email.</p>
         ) : (
           <form onSubmit={sendInvite} className="equal-split-row relaxed mt-3" style={{ "--split-count": 4 }}>
             <select className="form-select" value={invite.projectId} onChange={(e) => setInvite((prev) => ({ ...prev, projectId: e.target.value }))} required>
               <option value="">Select Project</option>
-              {projects.filter((project) => project.owner?._id === userId).map((project) => (
+              {headedProjects.map((project) => (
                 <option key={project._id} value={project._id}>{project.title}</option>
               ))}
             </select>

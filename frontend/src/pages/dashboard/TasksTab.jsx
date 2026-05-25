@@ -240,7 +240,14 @@ export default function TasksTab() {
   return (
     <div className="space-y-6">
       <section className="card p-6">
-        <div className="equal-split-row compact md:max-w-3xl" style={{ "--split-count": 3 }}>
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-[#5B9EA8]">Workspace</p>
+            <h2 className="text-xl font-semibold text-[#082F38] mt-1">Tasks Workspace</h2>
+          </div>
+        </div>
+
+        <div className="equal-split-row compact md:max-w-3xl mt-4" style={{ "--split-count": 3 }}>
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               currentView === "list" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
@@ -266,9 +273,7 @@ export default function TasksTab() {
             Calendar
           </button>
         </div>
-
-        <h2 className="text-xl font-semibold text-[#082F38] mb-4">Tasks Workspace</h2>
-        <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
+        <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 4 }}>
           <div className="relative">
             <FiSearch className="absolute left-3 top-3.5 text-[#5B9EA8]" />
             <input
