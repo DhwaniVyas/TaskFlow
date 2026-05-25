@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
 
@@ -10,7 +10,7 @@ export default function AnalyticsTab() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
 
-  const loadAnalytics = async (selectedRange) => {
+  const loadAnalytics = useCallback(async (selectedRange) => {
     try {
       setLoading(true);
       const { data } = await api.get("/analytics", { params: { range: selectedRange } });
@@ -20,17 +20,19 @@ export default function AnalyticsTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     loadAnalytics(range);
-  }, [range]);
+  }, [loadAnalytics, range]);
 
   const metrics = analytics?.metrics || {};
-  const statusDonut = analytics?.charts?.statusDonut || [];
+  const statusDonut = useMemo(() => analytics?.charts?.statusDonut || [], [analytics]);
+  const tasksByCategory = useMemo(() => analytics?.charts?.tasksByCategory || [], [analytics]);
   const projectCompletion = analytics?.charts?.projectCompletion || [];
   const insights = analytics?.insights || {};
   const totalStatus = useMemo(() => statusDonut.reduce((sum, item) => sum + (item.value || 0), 0), [statusDonut]);
+  const totalCategory = useMemo(() => tasksByCategory.reduce((sum, item) => sum + (item.value || 0), 0), [tasksByCategory]);
 
   return (
     <div className="space-y-6">
@@ -106,10 +108,37 @@ export default function AnalyticsTab() {
           </section>
 
           <section className="card p-6">
+            <h3 className="text-base font-semibold text-[#082F38]">Category Distribution</h3>
+            <div className="mt-4 space-y-3">
+              {tasksByCategory.length === 0 ? (
+                <p className="text-sm text-[#5B9EA8]">No category data yet.</p>
+              ) : (
+                tasksByCategory.map((item) => {
+                  const width = totalCategory > 0 ? Math.round(((item.value || 0) / totalCategory) * 100) : 0;
+                  return (
+                    <div key={item.label}>
+                      <div className="flex items-center justify-between text-sm text-[#082F38]">
+                        <span>{item.label}</span>
+                        <span>{item.value || 0}</span>
+                      </div>
+                      <div className="mt-1 h-2 rounded bg-[#E2F4F6] overflow-hidden">
+                        <div className="h-full bg-[#F97316]" style={{ width: `${width}%` }} />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          <section className="card p-6">
             <h3 className="text-base font-semibold text-[#082F38]">Performance Insights</h3>
             <div className="grid md:grid-cols-3 gap-3 mt-3 text-sm">
               <InsightCard title="Most Productive Day" value={insights.mostProductiveDay || "N/A"} />
+              <InsightCard title="Top Category" value={insights.topCategory || "N/A"} />
               <InsightCard title="Most Delayed Category" value={insights.mostDelayedCategory || "N/A"} />
+            </div>
+            <div className="mt-3 text-sm">
               <InsightCard title="Suggestion" value={insights.highCompletionStreakSuggestion || "Keep your daily workflow focused."} />
             </div>
           </section>

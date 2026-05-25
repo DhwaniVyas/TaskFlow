@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { FiFolder, FiMail, FiMessageSquare, FiUsers } from "react-icons/fi";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
@@ -14,13 +15,69 @@ const initialProject = {
 const initialProjectTask = {
   title: "",
   description: "",
-  category: "",
-  priority: "",
-  status: "",
+  category: "Work",
+  priority: "medium",
+  status: "todo",
   dueDate: "",
   scheduledDate: "",
   assignedTo: "",
 };
+
+const categories = ["Work", "Study", "Personal", "Meeting", "Development", "Design", "Operations"];
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleDateString() : "N/A";
+}
+
+function buildCommentThreads(comments) {
+  const byId = new Map();
+  const roots = [];
+
+  for (const comment of comments) {
+    byId.set(String(comment._id), { ...comment, replies: [] });
+  }
+
+  for (const comment of byId.values()) {
+    const parentId = comment.replyTo?._id || comment.replyTo;
+    if (parentId && byId.has(String(parentId))) {
+      byId.get(String(parentId)).replies.push(comment);
+    } else {
+      roots.push(comment);
+    }
+  }
+
+  return roots;
+}
+
+function CommentThread({ comment, level = 0, onReply }) {
+  const authorName = comment.user?.fullName || "User";
+
+  return (
+    <div className={`rounded-xl border border-[#E2E8F0] bg-white p-3 ${level > 0 ? "ml-4 mt-2" : ""}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[#082F38]">{authorName}</p>
+          <p className="text-xs text-[#5B9EA8]">{new Date(comment.createdAt).toLocaleString()}</p>
+        </div>
+        <button className="btn btn-secondary !text-xs" onClick={() => onReply(comment)}>
+          Reply
+        </button>
+      </div>
+      {comment.replyTo?.user && (
+        <p className="text-xs text-[#0E7490] mt-2">Replying to {comment.replyTo.user.fullName}</p>
+      )}
+      <p className="text-sm text-[#082F38] mt-2 whitespace-pre-wrap">{comment.message}</p>
+
+      {comment.replies?.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {comment.replies.map((reply) => (
+            <CommentThread key={reply._id} comment={reply} level={level + 1} onReply={onReply} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProjectsTab() {
   const { showToast, dashboardData } = useDashboardWorkspace();
@@ -33,14 +90,26 @@ export default function ProjectsTab() {
   const [invite, setInvite] = useState({ projectId: "", email: "", role: "member" });
   const [openProject, setOpenProject] = useState(null);
   const [taskForm, setTaskForm] = useState(initialProjectTask);
+  const [showTaskScheduling, setShowTaskScheduling] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [comments, setComments] = useState([]);
   const [commentMessage, setCommentMessage] = useState("");
+  const [replyTarget, setReplyTarget] = useState(null);
   const userId = dashboardData?.user?.id;
-  const headedProjects = projects.filter((project) => project.owner?._id === userId);
 
-  const fetchProjects = async () => {
+  const headedProjects = useMemo(
+    () => projects.filter((project) => project.owner?._id === userId),
+    [projects, userId]
+  );
+
+  const acceptedMembers = (openProject?.project?.members || []).filter((member) => member.status === "accepted");
+  const pendingMembers = (openProject?.project?.members || []).filter((member) => member.status === "pending");
+  const isProjectHead = openProject ? openProject.project.owner?._id === userId : false;
+  const selectedTask = (openProject?.tasks || []).find((task) => task._id === selectedTaskId);
+  const threadedComments = useMemo(() => buildCommentThreads(comments), [comments]);
+
+  const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get("/projects");
@@ -50,7 +119,7 @@ export default function ProjectsTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   const fetchProjectDetails = async (projectId) => {
     try {
@@ -78,7 +147,7 @@ export default function ProjectsTab() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   useEffect(() => {
     const inviteToken = searchParams.get("inviteToken");
@@ -93,10 +162,7 @@ export default function ProjectsTab() {
         showToast(err?.response?.data?.message || "Failed to accept invitation");
       }
     })();
-  }, [searchParams, setSearchParams]);
-
-  const acceptedMembers = (openProject?.project?.members || []).filter((member) => member.status === "accepted");
-  const isProjectHead = openProject ? openProject.project.owner?._id === userId : false;
+  }, [fetchProjects, searchParams, setSearchParams, showToast]);
 
   const openCreateProject = () => {
     setEditingProject(null);
@@ -114,6 +180,12 @@ export default function ProjectsTab() {
       targetDate: project.targetDate ? new Date(project.targetDate).toISOString().slice(0, 10) : "",
     });
     setShowProjectModal(true);
+  };
+
+  const resetTaskComposer = () => {
+    setEditingTaskId("");
+    setTaskForm(initialProjectTask);
+    setShowTaskScheduling(false);
   };
 
   const saveProject = async (e) => {
@@ -181,18 +253,14 @@ export default function ProjectsTab() {
     setTaskForm({
       title: task.title || "",
       description: task.description || "",
-      category: task.category || "",
-      priority: task.priority || "",
-      status: task.status || "",
+      category: task.category || "Work",
+      priority: task.priority || "medium",
+      status: task.status || "todo",
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
       scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
       assignedTo: task.assignedTo || "",
     });
-  };
-
-  const resetTaskComposer = () => {
-    setEditingTaskId("");
-    setTaskForm(initialProjectTask);
+    setShowTaskScheduling(Boolean(task.scheduledDate));
   };
 
   const saveProjectTask = async (e) => {
@@ -203,6 +271,7 @@ export default function ProjectsTab() {
         ...taskForm,
         projectId: openProject.project._id,
         assignedTo: taskForm.assignedTo || null,
+        scheduledDate: showTaskScheduling ? taskForm.scheduledDate || null : null,
       };
       if (editingTaskId) {
         await api.put(`/tasks/${editingTaskId}`, payload);
@@ -247,6 +316,9 @@ export default function ProjectsTab() {
       showToast("Task marked complete");
       await fetchProjectDetails(openProject.project._id);
       await fetchProjects();
+      if (selectedTaskId === taskId) {
+        await fetchComments(taskId);
+      }
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to update task status");
     }
@@ -256,8 +328,12 @@ export default function ProjectsTab() {
     e.preventDefault();
     if (!selectedTaskId || !commentMessage.trim()) return;
     try {
-      await api.post(`/tasks/${selectedTaskId}/comments`, { message: commentMessage.trim() });
+      await api.post(`/tasks/${selectedTaskId}/comments`, {
+        message: commentMessage.trim(),
+        replyTo: replyTarget?._id || null,
+      });
       setCommentMessage("");
+      setReplyTarget(null);
       await fetchComments(selectedTaskId);
       showToast("Comment added");
     } catch (err) {
@@ -271,8 +347,9 @@ export default function ProjectsTab() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-[#082F38]">Projects Workspace</h2>
-            <p className="text-sm text-[#5B9EA8] mt-1">Create projects, invite collaborators, assign work, and discuss tasks inside the same workspace.</p>
-            <p className="text-xs text-[#5B9EA8] mt-2">This list includes projects you head and projects you joined after accepting an invitation.</p>
+            <p className="text-sm text-[#5B9EA8] mt-1">
+              Keep cards compact here, then open a project for full collaboration, ownership controls, and discussion.
+            </p>
           </div>
           <button className="btn btn-primary" onClick={openCreateProject}>Create Project</button>
         </div>
@@ -341,17 +418,17 @@ export default function ProjectsTab() {
             <form onSubmit={saveProject} className="space-y-4">
               <input className="form-input w-full" placeholder="Project name" value={projectForm.title} onChange={(e) => setProjectForm((prev) => ({ ...prev, title: e.target.value }))} required />
               <textarea className="form-textarea w-full" rows={4} placeholder="Project description" value={projectForm.description} onChange={(e) => setProjectForm((prev) => ({ ...prev, description: e.target.value }))} />
-              <div className="grid md:grid-cols-3 gap-3">
+              <div className="equal-split-row relaxed" style={{ "--split-count": 3 }}>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8]">Project Color</p>
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Project Color</p>
                   <input type="color" className="form-input h-[44px]" value={projectForm.color} onChange={(e) => setProjectForm((prev) => ({ ...prev, color: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8]">Start Date</p>
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Start Date</p>
                   <input type="date" className="form-input" value={projectForm.startDate} onChange={(e) => setProjectForm((prev) => ({ ...prev, startDate: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8]">Deadline</p>
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Deadline</p>
                   <input type="date" className="form-input" value={projectForm.targetDate} onChange={(e) => setProjectForm((prev) => ({ ...prev, targetDate: e.target.value }))} />
                 </div>
               </div>
@@ -376,169 +453,235 @@ export default function ProjectsTab() {
                   <div className="flex flex-wrap gap-3 mt-3 text-xs text-[#5B9EA8]">
                     <span>Head: {openProject.project.owner?.fullName || "N/A"}</span>
                     <span>Collaborators: {Math.max(acceptedMembers.length - 1, 0)}</span>
-                    <span>Start: {openProject.project.startDate ? new Date(openProject.project.startDate).toLocaleDateString() : "N/A"}</span>
-                    <span>Deadline: {openProject.project.targetDate ? new Date(openProject.project.targetDate).toLocaleDateString() : "N/A"}</span>
+                    <span>Start: {formatDate(openProject.project.startDate)}</span>
+                    <span>Deadline: {formatDate(openProject.project.targetDate)}</span>
                   </div>
                 </div>
                 <button className="btn btn-secondary" onClick={() => setOpenProject(null)}>Close</button>
               </div>
             </div>
 
-            <div className="p-6">
-          <div className="card p-6" style={{ borderColor: openProject.project.color }}>
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-              <div>
-                <h4 className="text-lg font-semibold text-[#082F38]">Project Details</h4>
-                <p className="text-sm text-[#5B9EA8] mt-1">Everyone in this project can view the same information, tasks, and discussion.</p>
+            <div className="p-6 space-y-4">
+              <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
+                <div className="card p-5">
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Status</p>
+                  <p className="text-lg font-semibold mt-2" style={{ color: openProject.project.color }}>{openProject.project.status}</p>
+                </div>
+                <div className="card p-5">
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Progress</p>
+                  <p className="text-lg font-semibold text-[#082F38] mt-2">{openProject.project.progress || 0}%</p>
+                </div>
+                <div className="card p-5">
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Accepted Members</p>
+                  <p className="text-lg font-semibold text-[#082F38] mt-2">{acceptedMembers.length}</p>
+                </div>
+                <div className="card p-5">
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Project Tasks</p>
+                  <p className="text-lg font-semibold text-[#082F38] mt-2">{(openProject.tasks || []).length}</p>
+                </div>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-wide px-3 py-2 rounded-full" style={{ background: `${openProject.project.color}20`, color: openProject.project.color }}>
-                {openProject.project.status}
-              </span>
-            </div>
-          </div>
 
-          <div className="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-4">
-            <div className="space-y-4">
-              {isProjectHead && <div className="card p-6">
-                <h4 className="text-lg font-semibold text-[#082F38] mb-4">{editingTaskId ? "Edit Project Task" : "Create Project Task"}</h4>
-                <form onSubmit={saveProjectTask} className="space-y-3">
-                  <input className="form-input w-full" placeholder="Task title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
-                  <textarea className="form-textarea w-full" rows={3} placeholder="Task description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
-                  <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
-                    <select className="form-select" value={taskForm.category} onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))} required>
-                      <option value="">Select Category</option>
-                      <option value="Work">Work</option>
-                      <option value="Study">Study</option>
-                      <option value="Personal">Personal</option>
-                      <option value="Meeting">Meeting</option>
-                      <option value="Development">Development</option>
-                      <option value="Design">Design</option>
-                      <option value="Custom">Custom</option>
-                    </select>
-                    <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
-                      <option value="">Select Priority</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                    <select className="form-select" value={taskForm.status} onChange={(e) => setTaskForm((prev) => ({ ...prev, status: e.target.value }))} required>
-                      <option value="">Select Status</option>
-                      <option value="todo">Todo</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                    <select className="form-select" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))}>
-                      <option value="">Assign Later</option>
-                      {acceptedMembers.map((member) => (
-                        <option key={member.user?._id || member.email} value={member.user?._id || ""}>
-                          {member.user?.fullName || member.email}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
-                    <div className="space-y-1">
-                      <p className="text-xs text-[#5B9EA8]">Deadline</p>
-                      <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-[#5B9EA8]">Scheduled Date (Optional)</p>
-                      <input type="date" className="form-input" value={taskForm.scheduledDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="equal-split-row compact md:ml-auto md:max-w-sm" style={{ "--split-count": editingTaskId ? 2 : 1 }}>
-                    {editingTaskId && <button type="button" className="btn btn-secondary" onClick={resetTaskComposer}>Cancel Edit</button>}
-                    <button type="submit" className="btn btn-primary">{editingTaskId ? "Save Task" : "Create Task"}</button>
-                  </div>
-                </form>
-              </div>}
-
-              <div className="card p-6">
-                <h4 className="text-lg font-semibold text-[#082F38] mb-4">Project Tasks</h4>
-                <div className="space-y-3">
-                  {(openProject.tasks || []).length === 0 ? (
-                    <p className="text-sm text-[#5B9EA8]">No project tasks yet.</p>
-                  ) : (
-                    openProject.tasks.map((task) => {
-                      const assignee = acceptedMembers.find((member) => member.user?._id === task.assignedTo);
-                      return (
-                        <div key={task._id} className="rounded-xl border p-4 bg-white" style={{ borderColor: openProject.project.color }}>
-                          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-                            <div>
-                              <h5 className="font-semibold text-[#082F38]">{task.title}</h5>
-                              <p className="text-sm text-[#5B9EA8] mt-1">{task.description || "No description"}</p>
-                              <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                                <span className="badge badge-status-due-soon">{task.priority}</span>
-                                <span className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}>
-                                  {task.status.replace("_", " ")}
-                                </span>
-                                <span style={{ color: openProject.project.color }}>{task.category || "General"}</span>
-                                <span className="text-[#5B9EA8]">Deadline: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}</span>
-                                <span className="text-[#5B9EA8]">Assigned: {assignee?.user?.fullName || "Unassigned"}</span>
-                              </div>
-                            </div>
-                            <div className="equal-split-row compact w-full lg:w-auto" style={{ "--split-count": isProjectHead ? 4 : 2 }}>
-                              {isProjectHead && <button className="btn btn-secondary !text-xs" onClick={() => beginTaskEdit(task)}>Edit</button>}
-                              {task.status !== "completed" && <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>}
-                              <button className="btn btn-secondary !text-xs" onClick={() => {
-                                setSelectedTaskId(task._id);
-                                fetchComments(task._id);
-                              }}>
-                                Discuss
-                              </button>
-                              {isProjectHead && <button className="btn btn-accent !text-xs" onClick={() => deleteTask(task._id)}>Delete</button>}
-                            </div>
+              <div className="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-4">
+                <div className="space-y-4">
+                  {isProjectHead && (
+                    <div className="card p-6" style={{ borderColor: `${openProject.project.color}55` }}>
+                      <h4 className="text-lg font-semibold text-[#082F38] mb-4">{editingTaskId ? "Edit Project Task" : "Create Project Task"}</h4>
+                      <form onSubmit={saveProjectTask} className="space-y-4">
+                        <div className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
+                          <input className="form-input w-full" placeholder="Task title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
+                          <select className="form-select" value={taskForm.category} onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))} required>
+                            {categories.map((category) => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <textarea className="form-textarea w-full" rows={3} placeholder="Task description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
+                        <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
+                          <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                          </select>
+                          <select className="form-select" value={taskForm.status} onChange={(e) => setTaskForm((prev) => ({ ...prev, status: e.target.value }))} required>
+                            <option value="todo">Todo</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                          <select className="form-select" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))}>
+                            <option value="">Assign Later</option>
+                            {acceptedMembers.map((member) => (
+                              <option key={member.user?._id || member.email} value={member.user?._id || ""}>
+                                {member.user?.fullName || member.email}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="space-y-1">
+                            <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Deadline</p>
+                            <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
                           </div>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <div className="card p-6">
-                <h4 className="text-lg font-semibold text-[#082F38] mb-4">Collaborators</h4>
-                <div className="space-y-2">
-                  {(openProject.project.members || []).map((member, index) => (
-                    <div key={`${member.email}-${index}`} className="rounded-lg border border-[#E2E8F0] p-3">
-                      <p className="font-medium text-[#082F38]">{member.user?.fullName || member.email}</p>
-                      <p className="text-xs text-[#5B9EA8]">{member.role === "owner" ? "Head" : "Collaborator"} | {member.status}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="card p-6">
-                <h4 className="text-lg font-semibold text-[#082F38] mb-4">Task Discussion</h4>
-                {!selectedTaskId ? (
-                  <p className="text-sm text-[#5B9EA8]">Choose a project task to start the conversation.</p>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="max-h-72 overflow-y-auto space-y-2">
-                      {comments.length === 0 ? (
-                        <p className="text-sm text-[#5B9EA8]">No comments yet.</p>
-                      ) : (
-                        comments.map((comment) => (
-                          <div key={comment._id} className="rounded-lg border border-[#E2E8F0] p-3">
-                            <p className="text-sm text-[#082F38]">{comment.message}</p>
-                            <p className="text-xs text-[#5B9EA8] mt-1">
-                              {comment.user?.fullName || "User"} | {new Date(comment.createdAt).toLocaleString()}
-                            </p>
+                        <div className="rounded-xl border border-[#E2F4F6] bg-[#F8FCFD] px-4 py-4">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                            <div>
+                              <p className="font-medium text-[#082F38]">Optional planning date</p>
+                              <p className="text-xs text-[#5B9EA8] mt-1">Keep one main deadline, then add planning detail only if the team needs it.</p>
+                            </div>
+                            <button type="button" className="btn btn-secondary !text-xs" onClick={() => setShowTaskScheduling((prev) => !prev)}>
+                              {showTaskScheduling ? "Hide Planning Date" : "Add Planning Date"}
+                            </button>
                           </div>
-                        ))
+                          {showTaskScheduling && (
+                            <div className="mt-4">
+                              <input type="date" className="form-input" value={taskForm.scheduledDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="equal-split-row compact md:ml-auto md:max-w-sm" style={{ "--split-count": editingTaskId ? 2 : 1 }}>
+                          {editingTaskId && <button type="button" className="btn btn-secondary" onClick={resetTaskComposer}>Cancel Edit</button>}
+                          <button type="submit" className="btn btn-primary">{editingTaskId ? "Save Task" : "Create Task"}</button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  <div className="card p-6" style={{ borderColor: `${openProject.project.color}55` }}>
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-[#082F38]">Project Tasks</h4>
+                        <p className="text-sm text-[#5B9EA8] mt-1">Everyone can see all project work, but only the head can fully manage it.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(openProject.tasks || []).length === 0 ? (
+                        <p className="text-sm text-[#5B9EA8]">No project tasks yet.</p>
+                      ) : (
+                        openProject.tasks.map((task) => {
+                          const assignee = acceptedMembers.find((member) => member.user?._id === task.assignedTo);
+                          const canCompleteTask = isProjectHead || String(task.assignedTo || "") === String(userId);
+                          return (
+                            <div key={task._id} className="rounded-xl border p-4 bg-white" style={{ borderColor: `${openProject.project.color}55` }}>
+                              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h5 className="font-semibold text-[#082F38]">{task.title}</h5>
+                                    <span className="text-[11px] uppercase tracking-wide px-2 py-1 rounded-full" style={{ background: `${openProject.project.color}14`, color: openProject.project.color }}>
+                                      {task.category || "General"}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-[#5B9EA8] mt-1">{task.description || "No description"}</p>
+                                  <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                                    <span className="badge badge-status-due-soon">{task.priority}</span>
+                                    <span className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}>
+                                      {task.status.replace("_", " ")}
+                                    </span>
+                                    <span className="text-[#5B9EA8]">Deadline: {formatDate(task.dueDate)}</span>
+                                    <span className="text-[#5B9EA8]">Assigned: {assignee?.user?.fullName || "Unassigned"}</span>
+                                  </div>
+                                </div>
+
+                                <div className="equal-split-row compact w-full lg:w-[360px]" style={{ "--split-count": isProjectHead ? 4 : 2 }}>
+                                  {isProjectHead && <button className="btn btn-secondary !text-xs" onClick={() => beginTaskEdit(task)}>Edit</button>}
+                                  {task.status !== "completed" && canCompleteTask && <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>}
+                                  <button className="btn btn-secondary !text-xs" onClick={() => {
+                                    setSelectedTaskId(task._id);
+                                    setReplyTarget(null);
+                                    fetchComments(task._id);
+                                  }}>
+                                    Discuss
+                                  </button>
+                                  {isProjectHead && <button className="btn btn-accent !text-xs" onClick={() => deleteTask(task._id)}>Delete</button>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
-                    <form onSubmit={submitComment} className="space-y-2">
-                      <textarea className="form-textarea w-full" rows={3} placeholder="Ask a question or leave a recommendation..." value={commentMessage} onChange={(e) => setCommentMessage(e.target.value)} />
-                      <button className="btn btn-primary" type="submit">Post Comment</button>
-                    </form>
                   </div>
-                )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="card p-6">
+                    <h4 className="text-lg font-semibold text-[#082F38] mb-4">Collaborators</h4>
+                    <div className="space-y-2">
+                      {acceptedMembers.map((member, index) => (
+                        <div key={`${member.email}-${index}`} className="rounded-lg border border-[#E2E8F0] p-3">
+                          <p className="font-medium text-[#082F38]">{member.user?.fullName || member.email}</p>
+                          <p className="text-xs text-[#5B9EA8]">{member.role === "owner" ? "Head" : "Collaborator"} | accepted</p>
+                        </div>
+                      ))}
+                      {pendingMembers.length > 0 && (
+                        <div className="rounded-xl border border-dashed border-[#E2E8F0] p-3 bg-[#F8FCFD]">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[#5B9EA8] mb-2">Pending Invitations</p>
+                          <div className="space-y-2">
+                            {pendingMembers.map((member, index) => (
+                              <div key={`pending-${member.email}-${index}`} className="text-sm text-[#5B9EA8]">
+                                {member.email} | {member.role}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="card p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="text-lg font-semibold text-[#082F38]">Task Discussion</h4>
+                        <p className="text-sm text-[#5B9EA8] mt-1">Questions, recommendations, updates, and replies stay attached to the relevant task.</p>
+                      </div>
+                      {selectedTask && (
+                        <span className="text-xs px-2 py-1 rounded-full" style={{ background: `${openProject.project.color}14`, color: openProject.project.color }}>
+                          {selectedTask.title}
+                        </span>
+                      )}
+                    </div>
+
+                    {!selectedTaskId ? (
+                      <p className="text-sm text-[#5B9EA8] mt-4">Choose a project task to start the conversation.</p>
+                    ) : (
+                      <div className="space-y-4 mt-4">
+                        <div className="max-h-72 overflow-y-auto space-y-3">
+                          {threadedComments.length === 0 ? (
+                            <p className="text-sm text-[#5B9EA8]">No comments yet.</p>
+                          ) : (
+                            threadedComments.map((comment) => (
+                              <CommentThread key={comment._id} comment={comment} onReply={setReplyTarget} />
+                            ))
+                          )}
+                        </div>
+
+                        <form onSubmit={submitComment} className="space-y-2">
+                          {replyTarget && (
+                            <div className="rounded-lg border border-[#E2F4F6] bg-[#F8FCFD] px-3 py-2 text-xs text-[#5B9EA8] flex items-center justify-between gap-2">
+                              <span>Replying to {replyTarget.user?.fullName || "User"}</span>
+                              <button type="button" className="text-[#0E7490] font-semibold" onClick={() => setReplyTarget(null)}>
+                                Clear
+                              </button>
+                            </div>
+                          )}
+                          <textarea className="form-textarea w-full" rows={3} placeholder="Ask a question or leave a recommendation..." value={commentMessage} onChange={(e) => setCommentMessage(e.target.value)} />
+                          <button className="btn btn-primary" type="submit">Post Comment</button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="card p-6">
+                    <h4 className="text-lg font-semibold text-[#082F38] mb-4">Workspace Rules</h4>
+                    <div className="space-y-3 text-sm text-[#5B9EA8]">
+                      <p className="flex items-center gap-2"><FiFolder /> Project heads manage project structure, tasks, and assignments.</p>
+                      <p className="flex items-center gap-2"><FiUsers /> Collaborators can view everything after invite acceptance, join discussion, and complete their own assigned work.</p>
+                      <p className="flex items-center gap-2"><FiMail /> Pending invitees cannot see this workspace until they explicitly accept.</p>
+                      <p className="flex items-center gap-2"><FiMessageSquare /> Discussions stay contextual to the task so collaboration remains traceable.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
             </div>
           </div>
         </div>

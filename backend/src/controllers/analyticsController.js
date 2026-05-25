@@ -26,6 +26,14 @@ async function getAnalytics(req, res, next) {
     const completed = allTasks.filter((t) => t.status === "completed").length;
     const overdue = allTasks.filter((t) => t.dueDate && t.status !== "completed" && new Date(t.dueDate) < now).length;
     const completionRate = allTasks.length ? Math.round((completed / allTasks.length) * 100) : 0;
+    const categoryMap = {};
+    for (const task of allTasks) {
+      const key = task.category || "Uncategorized";
+      categoryMap[key] = (categoryMap[key] || 0) + 1;
+    }
+    const tasksByCategory = Object.entries(categoryMap)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value);
 
     const tasksByDayMap = {};
     for (const t of periodTasks) {
@@ -64,6 +72,7 @@ async function getAnalytics(req, res, next) {
       delayedCategoryMap[key] = (delayedCategoryMap[key] || 0) + 1;
     }
     const mostDelayedCategory = Object.entries(delayedCategoryMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
+    const topCategory = tasksByCategory[0]?.label || "N/A";
 
     res.status(200).json({
       success: true,
@@ -81,6 +90,7 @@ async function getAnalytics(req, res, next) {
         },
         charts: {
           tasksByDay,
+          tasksByCategory,
           statusDonut: [
             { label: "Completed", value: completed },
             { label: "Pending", value: allTasks.length - completed },
@@ -89,6 +99,7 @@ async function getAnalytics(req, res, next) {
         },
         insights: {
           mostProductiveDay,
+          topCategory,
           mostDelayedCategory,
           highCompletionStreakSuggestion:
             completionRate >= 70

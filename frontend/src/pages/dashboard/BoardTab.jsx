@@ -9,9 +9,8 @@ const columns = [
 ];
 
 function dueText(task) {
-  if (!task.dueDate) return "No due date";
-  const d = new Date(task.dueDate);
-  return d.toLocaleDateString();
+  if (!task.dueDate) return "No deadline";
+  return new Date(task.dueDate).toLocaleDateString();
 }
 
 export default function BoardTab({ tasks = [], loading = false, onRefresh, onEditTask, showToast }) {
@@ -72,30 +71,61 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-[#082F38]">{column.title}</h3>
-              <span className="text-xs text-[#5B9EA8]">{grouped[column.key].length} tasks � {completionPercent(column.key)}%</span>
+              <span className="text-xs text-[#5B9EA8]">
+                {grouped[column.key].length} tasks | {completionPercent(column.key)}%
+              </span>
             </div>
 
             <div className="space-y-3">
               {grouped[column.key].map((task) => {
                 const subtasks = task.subtasks || [];
                 const done = subtasks.filter((s) => s.completed).length;
+                const projectColor = task.projectColor || "#0E7490";
+                const isProjectTask = Boolean(task.projectId);
+
                 return (
                   <div
                     key={task._id}
                     draggable
                     onDragStart={() => setDragTaskId(task._id)}
-                    className="bg-white border border-[#C4E9ED]/60 rounded-xl p-3 cursor-grab active:cursor-grabbing"
+                    className="bg-white border rounded-xl p-3 cursor-grab active:cursor-grabbing"
+                    style={{ borderColor: isProjectTask ? `${projectColor}70` : "#C4E9ED99" }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-sm font-semibold text-[#082F38]">{task.title}</h4>
-                      <span className="text-[10px] px-2 py-1 rounded bg-[#FFF7ED] text-[#C2410C] uppercase">{task.priority}</span>
+                      <span
+                        className="text-[10px] px-2 py-1 rounded uppercase border"
+                        style={{
+                          background: isProjectTask ? `${projectColor}14` : "#FFF7ED",
+                          color: isProjectTask ? projectColor : "#C2410C",
+                          borderColor: isProjectTask ? `${projectColor}44` : "#FED7AA",
+                        }}
+                      >
+                        {task.priority}
+                      </span>
                     </div>
                     <p className="text-xs text-[#5B9EA8] mt-1">{task.description || "No description"}</p>
-                    <div className="text-xs text-[#5B9EA8] mt-2 flex items-center gap-1"><FiClock /> {dueText(task)}</div>
-                    <div className="text-xs text-[#5B9EA8] mt-1">Subtasks: {done}/{subtasks.length}</div>
+                    <div className="text-xs text-[#5B9EA8] mt-2 flex items-center gap-1">
+                      <FiClock /> {dueText(task)}
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <div className="text-xs text-[#5B9EA8]">Subtasks: {done}/{subtasks.length}</div>
+                      {isProjectTask && (
+                        <span
+                          className="text-[10px] px-2 py-1 rounded uppercase tracking-wide font-semibold"
+                          style={{ background: `${projectColor}14`, color: projectColor }}
+                        >
+                          Project
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-3 flex gap-2">
-                      <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => onEditTask?.(task)}><FiEdit2 /></button>
-                      <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => quickDelete(task._id)}><FiTrash2 /></button>
+                      <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => onEditTask?.(task)}>
+                        <FiEdit2 />
+                      </button>
+                      <button className="btn btn-secondary !text-xs !px-2 !py-1" onClick={() => quickDelete(task._id)}>
+                        <FiTrash2 />
+                      </button>
                     </div>
                   </div>
                 );
@@ -113,4 +143,3 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
     </div>
   );
 }
-

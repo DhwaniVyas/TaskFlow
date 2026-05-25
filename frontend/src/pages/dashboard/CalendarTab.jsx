@@ -100,7 +100,7 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-[#082F38]">Calendar & Scheduling</h2>
-            <p className="text-sm text-[#5B9EA8] mt-1">Date-first view of the same task records.</p>
+            <p className="text-sm text-[#5B9EA8] mt-1">Date-first view of your personal and assigned work.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {views.map((item) => (
@@ -169,18 +169,26 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                     {day.toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
                   </p>
                   <div className="space-y-1 mt-2">
-                    {dayEvents.map((task) => (
-                      <button
-                        key={task._id}
-                        draggable
-                        onDragStart={() => setDragTaskId(task._id)}
-                        onClick={() => onEditTask?.(task)}
-                        className="w-full text-left text-[11px] p-1 rounded bg-[#F0F9FA] border border-[#C4E9ED] cursor-pointer"
-                      >
-                        <p className="font-medium text-[#082F38] truncate">{task.title}</p>
-                        <p className="text-[#5B9EA8]">{dueBadge(task)}</p>
-                      </button>
-                    ))}
+                    {dayEvents.map((task) => {
+                      const projectColor = task.projectColor || "#0E7490";
+                      const isProjectTask = Boolean(task.projectId);
+                      return (
+                        <button
+                          key={task._id}
+                          draggable
+                          onDragStart={() => setDragTaskId(task._id)}
+                          onClick={() => onEditTask?.(task)}
+                          className="w-full text-left text-[11px] p-1 rounded border cursor-pointer"
+                          style={{
+                            background: isProjectTask ? `${projectColor}14` : "#F0F9FA",
+                            borderColor: isProjectTask ? `${projectColor}50` : "#C4E9ED",
+                          }}
+                        >
+                          <p className="font-medium text-[#082F38] truncate">{task.title}</p>
+                          <p style={{ color: isProjectTask ? projectColor : "#5B9EA8" }}>{dueBadge(task)}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -193,15 +201,24 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
         <section className="card p-6">
           <h3 className="text-lg font-semibold text-[#082F38]">Agenda</h3>
           {filteredAgenda.length === 0 ? (
-            <p className="text-[#5B9EA8] mt-3">No scheduled or due tasks.</p>
+            <p className="text-[#5B9EA8] mt-3">No scheduled or deadline-based tasks.</p>
           ) : (
             <div className="mt-4 space-y-2">
               {filteredAgenda.map((task) => {
                 const when = new Date(task.scheduledDate || task.dueDate);
+                const projectColor = task.projectColor || "#0E7490";
+                const isProjectTask = Boolean(task.projectId);
                 return (
-                  <button key={task._id} onClick={() => onEditTask?.(task)} className="w-full text-left border border-[#E2F4F6] rounded-lg p-3">
+                  <button
+                    key={task._id}
+                    onClick={() => onEditTask?.(task)}
+                    className="w-full text-left border rounded-lg p-3"
+                    style={{ borderColor: isProjectTask ? `${projectColor}55` : "#E2F4F6" }}
+                  >
                     <p className="font-medium text-[#082F38]">{task.title}</p>
-                    <p className="text-xs text-[#5B9EA8]">{when.toLocaleString()} • {dueBadge(task)} • {task.status.replace("_", " ")}</p>
+                    <p className="text-xs text-[#5B9EA8]">
+                      {when.toLocaleString()} | {dueBadge(task)} | {task.status.replace("_", " ")}
+                    </p>
                   </button>
                 );
               })}
@@ -212,4 +229,3 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
     </div>
   );
 }
-

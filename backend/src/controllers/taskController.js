@@ -81,6 +81,15 @@ async function findOwnedTask(taskId, userId) {
   return null;
 }
 
+async function canManageProjectTask(task, userId) {
+  if (!task?.projectId) return true;
+  return isProjectOwner(task.projectId, userId);
+}
+
+function isAssignedProjectMember(task, userId) {
+  return Boolean(task?.projectId) && String(task.assignedTo || "") === String(userId);
+}
+
 async function hasProjectAccess(projectId, userId) {
   if (!projectId) return true;
   if (!mongoose.Types.ObjectId.isValid(projectId)) return false;
@@ -202,7 +211,7 @@ async function updateTask(req, res, next) {
       throw new Error("Only the project head can move tasks into this project");
     }
 
-    if (task.projectId && !(await isProjectOwner(task.projectId, req.user._id))) {
+    if (!(await canManageProjectTask(task, req.user._id))) {
       res.status(403);
       throw new Error("Only the project head can edit project tasks");
     }
@@ -250,7 +259,7 @@ async function deleteTask(req, res, next) {
       res.status(404);
       throw new Error("Task not found");
     }
-    if (task.projectId && !(await isProjectOwner(task.projectId, req.user._id))) {
+    if (!(await canManageProjectTask(task, req.user._id))) {
       res.status(403);
       throw new Error("Only the project head can delete project tasks");
     }
@@ -363,6 +372,17 @@ async function updateTaskStatus(req, res, next) {
       throw new Error("Task not found");
     }
 
+    if (task.projectId) {
+      const canManage = await canManageProjectTask(task, req.user._id);
+      if (!canManage) {
+        const isAssignedMember = isAssignedProjectMember(task, req.user._id);
+        if (!isAssignedMember || status !== "completed") {
+          res.status(403);
+          throw new Error("Project members can only mark their assigned tasks as completed");
+        }
+      }
+    }
+
     task.status = status;
     await task.save();
     await recalcProjectProgress(task.projectId);
@@ -385,7 +405,7 @@ async function toggleSubtask(req, res, next) {
       res.status(404);
       throw new Error("Task not found");
     }
-    if (task.projectId && !(await isProjectOwner(task.projectId, req.user._id))) {
+    if (!(await canManageProjectTask(task, req.user._id))) {
       res.status(403);
       throw new Error("Only the project head can edit subtasks");
     }
