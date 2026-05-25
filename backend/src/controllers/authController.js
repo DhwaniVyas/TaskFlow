@@ -23,6 +23,7 @@ function sanitizeUser(user) {
     bio: user.bio,
     timezone: user.timezone,
     themePreference: user.themePreference,
+    notificationPreferences: user.notificationPreferences,
     emailVerified: user.emailVerified,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
@@ -367,7 +368,7 @@ async function getMe(req, res, next) {
 
 async function updateProfile(req, res, next) {
   try {
-    const { fullName, avatar, bio, timezone, themePreference, password } = req.body;
+    const { fullName, avatar, bio, timezone, themePreference, password, notificationPreferences } = req.body;
 
     if (!fullName || !fullName.trim()) {
       res.status(400);
@@ -391,6 +392,12 @@ async function updateProfile(req, res, next) {
         throw new Error("Invalid theme preference");
       }
       user.themePreference = themePreference;
+    }
+    if (notificationPreferences && typeof notificationPreferences === "object") {
+      user.notificationPreferences = {
+        ...user.notificationPreferences,
+        ...notificationPreferences,
+      };
     }
     if (password !== undefined && String(password).trim() !== "") {
       if (String(password).length < 6) {

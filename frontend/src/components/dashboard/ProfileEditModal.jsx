@@ -6,6 +6,13 @@ const initialProfileForm = {
   bio: "",
   timezone: "",
   themePreference: "light",
+  notificationPreferences: {
+    email: true,
+    assignment: true,
+    reminder: true,
+    project: true,
+    comments: true,
+  },
   password: "",
 };
 
@@ -27,6 +34,13 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
       bio: user.bio || "",
       timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
       themePreference: user.themePreference || "light",
+      notificationPreferences: {
+        email: user.notificationPreferences?.email ?? true,
+        assignment: user.notificationPreferences?.assignment ?? true,
+        reminder: user.notificationPreferences?.reminder ?? true,
+        project: user.notificationPreferences?.project ?? true,
+        comments: user.notificationPreferences?.comments ?? true,
+      },
       password: "",
     });
   }, [open, user]);
@@ -39,6 +53,7 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
       form.bio !== (user.bio || "") ||
       form.timezone !== (user.timezone || "") ||
       form.themePreference !== (user.themePreference || "light") ||
+      JSON.stringify(form.notificationPreferences) !== JSON.stringify(user.notificationPreferences || initialProfileForm.notificationPreferences) ||
       form.password !== ""
     );
   }, [form, user]);
@@ -133,6 +148,36 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
                 onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
                 placeholder="Leave blank to keep current"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Notifications</label>
+            <div className="grid md:grid-cols-5 gap-2 mt-2">
+              {[
+                ["email", "Email"],
+                ["assignment", "Assignment"],
+                ["reminder", "Reminder"],
+                ["project", "Project"],
+                ["comments", "Comments"],
+              ].map(([key, label]) => (
+                <label key={key} className="text-xs text-[#5B9EA8] flex items-center gap-2 border border-[#E2F4F6] rounded px-2 py-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.notificationPreferences[key])}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        notificationPreferences: {
+                          ...prev.notificationPreferences,
+                          [key]: e.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
           </div>
 

@@ -49,6 +49,13 @@ const userSchema = new mongoose.Schema(
       enum: ["light", "dark", "system"],
       default: "light",
     },
+    notificationPreferences: {
+      email: { type: Boolean, default: true },
+      assignment: { type: Boolean, default: true },
+      reminder: { type: Boolean, default: true },
+      project: { type: Boolean, default: true },
+      comments: { type: Boolean, default: true },
+    },
     lastLoginAt: {
       type: Date,
       default: null,

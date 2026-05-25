@@ -17,11 +17,8 @@ const tabConfig = [
   { key: "tasks", label: "Tasks", path: "/dashboard/tasks", comingSoon: false },
   { key: "projects", label: "Projects", path: "/dashboard/projects", comingSoon: false },
   { key: "analytics", label: "Analytics", path: "/dashboard/analytics", comingSoon: false },
-  { key: "team", label: "Team", path: "/dashboard/team", comingSoon: false },
   { key: "profile", label: "Profile", path: "/dashboard/profile", comingSoon: false },
   { key: "notifications", label: "Notifications", path: "/dashboard/notifications", comingSoon: true },
-  { key: "ai", label: "AI", path: "/dashboard/ai", comingSoon: true },
-  { key: "settings", label: "Settings", path: "/dashboard/settings", comingSoon: true },
 ];
 
 export default function DashboardLayout() {
@@ -66,6 +63,17 @@ export default function DashboardLayout() {
     };
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    const theme = dashboardData?.user?.themePreference || "light";
+    document.documentElement.classList.remove("theme-light", "theme-dark");
+    if (theme === "system") {
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.add(prefersDark ? "theme-dark" : "theme-light");
+      return;
+    }
+    document.documentElement.classList.add(theme === "dark" ? "theme-dark" : "theme-light");
+  }, [dashboardData?.user?.themePreference]);
 
   const handleLogout = () => {
     api.post("/auth/logout").catch(() => {});
@@ -120,12 +128,12 @@ export default function DashboardLayout() {
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <div className="min-h-screen bg-gradient-to-b from-[#F0F9FA] to-white">
-        <header className="border-b border-[#C4E9ED]/50 bg-white/90 backdrop-blur sticky top-0 z-40">
+      <div className="min-h-screen app-bg">
+        <header className="border-b border-[var(--line-soft)] bg-[var(--surface)]/90 backdrop-blur sticky top-0 z-40">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-wider text-[#5B9EA8] font-semibold">Dashboard</p>
-              <h1 className="text-xl md:text-2xl font-bold text-[#082F38]">Welcome, {user.fullName}</h1>
+              <p className="text-xs uppercase tracking-wider text-[var(--text-muted)] font-semibold">Dashboard</p>
+              <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">Welcome, {user.fullName}</h1>
             </div>
             <button onClick={handleLogout} className="btn btn-secondary flex items-center gap-2">
               <FiLogOut /> Logout
@@ -141,8 +149,8 @@ export default function DashboardLayout() {
                   className={({ isActive }) =>
                     `px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
                       isActive
-                        ? "bg-[#0E7490] text-white border-[#0E7490]"
-                        : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+                        ? "bg-[var(--brand-primary)] text-white border-[var(--brand-primary)]"
+                        : "bg-[var(--surface)] text-[var(--brand-primary)] border-[var(--line-soft)] hover:bg-[var(--surface-subtle)]"
                     }`
                   }
                 >
@@ -167,7 +175,7 @@ export default function DashboardLayout() {
         />
 
         {toast && (
-          <div className="fixed bottom-4 right-4 bg-[#082F38] text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50">
+          <div className="fixed bottom-4 right-4 bg-[var(--text-primary)] text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50">
             {toast}
           </div>
         )}

@@ -2,8 +2,13 @@ const mongoose = require("mongoose");
 
 const memberSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    email: { type: String, trim: true, lowercase: true, default: "" },
     role: { type: String, enum: ["owner", "admin", "member", "viewer"], default: "member" },
+    status: { type: String, enum: ["pending", "accepted"], default: "pending", index: true },
+    inviteTokenHash: { type: String, default: null, select: false },
+    invitedAt: { type: Date, default: Date.now },
+    acceptedAt: { type: Date, default: null },
   },
   { _id: false }
 );

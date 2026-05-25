@@ -25,6 +25,12 @@ const taskSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    creator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
@@ -42,12 +48,23 @@ const taskSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    assignedAt: {
+      type: Date,
+      default: null,
+    },
     title: {
       type: String,
       required: true,
       trim: true,
       minlength: 3,
       maxlength: 100,
+      index: true,
+    },
+    category: {
+      type: String,
+      trim: true,
+      maxlength: 60,
+      default: "Personal",
       index: true,
     },
     description: {

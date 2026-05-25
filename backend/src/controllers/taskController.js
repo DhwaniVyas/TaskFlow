@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
+const Project = require("../models/Project");
 const { recalcProjectProgress } = require("./projectController");
 
 const allowedStatus = ["todo", "in_progress", "completed"];
@@ -51,6 +52,10 @@ function validateTaskInput(body, isUpdate = false) {
     if (!Array.isArray(body.subtasks)) errors.push("Subtasks must be an array");
     else if (body.subtasks.length > 20) errors.push("Subtasks limit is 20");
   }
+  if (has("category")) {
+    const category = String(body.category || "").trim();
+    if (category.length > 60) errors.push("Category max length is 60");
+  }
   if (has("projectId") && body.projectId) {
     if (!mongoose.Types.ObjectId.isValid(body.projectId)) errors.push("Invalid project id");
   }
@@ -60,7 +65,20 @@ function validateTaskInput(body, isUpdate = false) {
 
 async function findOwnedTask(taskId, userId) {
   if (!mongoose.Types.ObjectId.isValid(taskId)) return null;
-  return Task.findOne({ _id: taskId, user: userId });
+  return Task.findOne({
+    _id: taskId,
+    $or: [{ creator: userId }, { user: userId }, { assignedTo: userId }],
+  });
+}
+
+async function hasProjectAccess(projectId, userId) {
+  if (!projectId) return true;
+  if (!mongoose.Types.ObjectId.isValid(projectId)) return false;
+  const project = await Project.findOne({
+    _id: projectId,
+    $or: [{ owner: userId }, { members: { $elemMatch: { user: userId, status: "accepted" } } }],
+  });
+  return Boolean(project);
 }
 
 async function createTask(req, res, next) {
@@ -71,9 +89,16 @@ async function createTask(req, res, next) {
       throw new Error(errors.join(", "));
     }
 
+    if (req.body.projectId && !(await hasProjectAccess(req.body.projectId, req.user._id))) {
+      res.status(403);
+      throw new Error("You do not have access to this project");
+    }
+
     const task = await Task.create({
       user: req.user._id,
+      creator: req.user._id,
       title: req.body.title.trim(),
+      category: String(req.body.category || "Personal").trim() || "Personal",
       description: req.body.description?.trim() || "",
       status: req.body.status || "todo",
       priority: req.body.priority || "medium",
@@ -101,8 +126,20 @@ async function getTasks(req, res, next) {
     const skip = (page - 1) * limit;
 
     const [tasks, total] = await Promise.all([
-      Task.find({ user: req.user._id }).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Task.countDocuments({ user: req.user._id }),
+      Task.find({
+        $or: [
+          { creator: req.user._id, projectId: null },
+          { user: req.user._id, projectId: null },
+          { assignedTo: req.user._id },
+        ],
+      }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Task.countDocuments({
+        $or: [
+          { creator: req.user._id, projectId: null },
+          { user: req.user._id, projectId: null },
+          { assignedTo: req.user._id },
+        ],
+      }),
     ]);
     res.status(200).json({
       success: true,
@@ -141,9 +178,16 @@ async function updateTask(req, res, next) {
       throw new Error("Task not found");
     }
 
+    if (req.body.projectId && !(await hasProjectAccess(req.body.projectId, req.user._id))) {
+      res.status(403);
+      throw new Error("You do not have access to this project");
+    }
+
     const oldProjectId = task.projectId ? String(task.projectId) : null;
+    if (!task.creator) task.creator = task.user || req.user._id;
     if (req.body.title !== undefined) task.title = req.body.title.trim();
     if (req.body.description !== undefined) task.description = String(req.body.description || "").trim();
+    if (req.body.category !== undefined) task.category = String(req.body.category || "Personal").trim() || "Personal";
     if (req.body.status !== undefined) task.status = req.body.status;
     if (req.body.priority !== undefined) task.priority = req.body.priority;
     if (req.body.projectId !== undefined) task.projectId = req.body.projectId || null;
@@ -193,8 +237,10 @@ async function searchTasks(req, res, next) {
 
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const tasks = await Task.find({
-      user: req.user._id,
-      $or: [{ title: regex }, { description: regex }, { "subtasks.title": regex }],
+      $and: [
+        { $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }] },
+        { $or: [{ title: regex }, { description: regex }, { "subtasks.title": regex }, { category: regex }] },
+      ],
     }).sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: tasks });
@@ -205,7 +251,9 @@ async function searchTasks(req, res, next) {
 
 async function filterTasks(req, res, next) {
   try {
-    const query = { user: req.user._id };
+    const query = {
+      $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }],
+    };
     const { status, priority, due, completed } = req.query;
 
     if (status && allowedStatus.includes(status)) query.status = status;
@@ -236,7 +284,11 @@ async function sortTasks(req, res, next) {
     if (by === "priority") {
       // high > medium > low for desc
       const tasks = await Task.aggregate([
-        { $match: { user: req.user._id } },
+        {
+          $match: {
+            $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }],
+          },
+        },
         {
           $addFields: {
             priorityRank: {
@@ -257,7 +309,7 @@ async function sortTasks(req, res, next) {
       return res.status(200).json({ success: true, data: tasks });
     }
 
-    const tasks = await Task.find({ user: req.user._id }).sort(sort);
+    const tasks = await Task.find({ $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }] }).sort(sort);
     res.status(200).json({ success: true, data: tasks });
   } catch (error) {
     next(error);

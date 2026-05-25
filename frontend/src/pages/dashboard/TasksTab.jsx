@@ -18,6 +18,7 @@ import CalendarTab from "./CalendarTab";
 const initialTaskForm = {
   title: "",
   description: "",
+  category: "",
   priority: "",
   status: "",
   dueDate: "",
@@ -143,6 +144,7 @@ export default function TasksTab() {
     setTaskForm({
       title: task.title || "",
       description: task.description || "",
+      category: task.category || "",
       priority: task.priority || "",
       status: task.status || "",
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
@@ -317,8 +319,9 @@ export default function TasksTab() {
               const doneSubtasks = subtasks.filter((s) => s.completed).length;
               const expanded = !!expandedTaskIds[task._id];
               const dueLabel = getDueLabel(task.dueDate, task.status);
+              const projectColor = projects.find((p) => p._id === task.projectId)?.color || null;
               return (
-                <div key={task._id} className="border border-[#C4E9ED]/50 rounded-xl p-4 bg-white">
+                <div key={task._id} className="border rounded-xl p-4 bg-white" style={{ borderColor: projectColor || "#C4E9ED80" }}>
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                     <div>
                       <h4 className="text-base font-semibold text-[#082F38]">{task.title}</h4>
@@ -327,6 +330,7 @@ export default function TasksTab() {
                         <span className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}>{task.status.replace("_", " ")}</span>
                         <span className="badge badge-status-due-soon">{task.priority}</span>
                         <span className={`text-xs flex items-center gap-1 ${dueLabel === "Overdue" ? "text-[#DC2626] font-semibold" : "text-[#5B9EA8]"}`}><FiClock /> {dueLabel}</span>
+                        <span className="text-xs text-[#4F46E5]">{task.category || "General"}</span>
                         <span className="text-xs text-[#5B9EA8]">{doneSubtasks}/{subtasks.length} subtasks</span>
                       </div>
                     </div>
@@ -388,7 +392,17 @@ export default function TasksTab() {
             <form onSubmit={handleTaskSubmit} className="space-y-3">
               <input className="form-input w-full" placeholder="Title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
               <textarea className="form-textarea w-full" rows={3} placeholder="Description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
-              <div className="grid md:grid-cols-3 gap-3">
+              <div className="grid md:grid-cols-4 gap-3">
+                <select className="form-select" value={taskForm.category} onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))}>
+                  <option value="" disabled>Select Category</option>
+                  <option value="Work">Work</option>
+                  <option value="Study">Study</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Meeting">Meeting</option>
+                  <option value="Development">Development</option>
+                  <option value="Design">Design</option>
+                  <option value="Custom">Custom</option>
+                </select>
                 <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
                   <option value="" disabled>Select Priority</option>
                   <option value="low">Low</option>

@@ -1,25 +1,26 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
+import { useSearchParams } from "react-router-dom";
 
 const initialProject = {
   title: "",
   description: "",
-  category: "General",
   color: "#0E7490",
-  status: "active",
   startDate: "",
   targetDate: "",
 };
 
 export default function ProjectsTab() {
   const { showToast } = useDashboardWorkspace();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(initialProject);
   const [openProject, setOpenProject] = useState(null);
+  const [invite, setInvite] = useState({ projectId: "", email: "", role: "member" });
 
   const fetchProjects = async () => {
     try {
@@ -37,6 +38,21 @@ export default function ProjectsTab() {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    const inviteToken = searchParams.get("inviteToken");
+    if (!inviteToken) return;
+    (async () => {
+      try {
+        await api.post("/projects/accept-invite", { token: inviteToken });
+        showToast("Project invitation accepted");
+        setSearchParams({});
+        fetchProjects();
+      } catch (err) {
+        showToast(err?.response?.data?.message || "Failed to accept invitation");
+      }
+    })();
+  }, [searchParams]);
+
   const openCreate = () => {
     setEditing(null);
     setForm(initialProject);
@@ -48,9 +64,7 @@ export default function ProjectsTab() {
     setForm({
       title: project.title || "",
       description: project.description || "",
-      category: project.category || "General",
       color: project.color || "#0E7490",
-      status: project.status || "active",
       startDate: project.startDate ? new Date(project.startDate).toISOString().slice(0, 10) : "",
       targetDate: project.targetDate ? new Date(project.targetDate).toISOString().slice(0, 10) : "",
     });
@@ -130,7 +144,7 @@ export default function ProjectsTab() {
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-lg font-semibold text-[#082F38]">{project.title}</h3>
                 <span className="text-[10px] px-2 py-1 rounded uppercase" style={{ background: `${project.color}22`, color: project.color }}>
-                  {project.category}
+                  {project.status}
                 </span>
               </div>
               <p className="text-sm text-[#5B9EA8] mt-1">{project.description || "No description"}</p>
@@ -154,6 +168,23 @@ export default function ProjectsTab() {
         )}
       </section>
 
+      <section className="card p-6">
+        <h3 className="text-lg font-semibold text-[#082F38]">Invite Collaborator</h3>
+        <form onSubmit={sendInvite} className="grid md:grid-cols-4 gap-3 mt-3">
+          <select className="form-select" value={invite.projectId} onChange={(e) => setInvite((p) => ({ ...p, projectId: e.target.value }))} required>
+            <option value="">Select Project</option>
+            {projects.map((project) => <option key={project._id} value={project._id}>{project.title}</option>)}
+          </select>
+          <input className="form-input" type="email" placeholder="Member email" value={invite.email} onChange={(e) => setInvite((p) => ({ ...p, email: e.target.value }))} required />
+          <select className="form-select" value={invite.role} onChange={(e) => setInvite((p) => ({ ...p, role: e.target.value }))}>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <button className="btn btn-primary" type="submit">Send Invite</button>
+        </form>
+      </section>
+
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
           <div className="bg-white rounded-xl w-full max-w-xl p-6">
@@ -162,11 +193,8 @@ export default function ProjectsTab() {
               <input className="form-input w-full" placeholder="Title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} required />
               <textarea className="form-textarea w-full" rows={3} placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
               <div className="grid md:grid-cols-3 gap-3">
-                <input className="form-input" placeholder="Category" value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} />
                 <input type="color" className="form-input h-[42px]" value={form.color} onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))} />
-                <select className="form-select" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
-                  <option value="planning">Planning</option><option value="active">Active</option><option value="completed">Completed</option>
-                </select>
+                <input className="form-input" value="Creator added automatically" readOnly />
               </div>
               <div className="grid md:grid-cols-2 gap-3">
                 <input type="date" className="form-input" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
@@ -221,3 +249,14 @@ export default function ProjectsTab() {
     </div>
   );
 }
+  const sendInvite = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/projects/invite", invite);
+      showToast("Invitation email sent");
+      setInvite({ projectId: "", email: "", role: "member" });
+      await fetchProjects();
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to invite member");
+    }
+  };

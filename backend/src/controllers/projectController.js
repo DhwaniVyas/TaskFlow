@@ -2,11 +2,18 @@ const mongoose = require("mongoose");
 const Project = require("../models/Project");
 const Task = require("../models/Task");
 const ActivityLog = require("../models/ActivityLog");
+const { createRandomToken, hashToken } = require("../utils/token");
+const { sendEmail } = require("../utils/mailer");
+const { env } = require("../config/env");
 
 function projectAccessQuery(userId) {
   return {
-    $or: [{ owner: userId }, { "members.user": userId }],
+    $or: [{ owner: userId }, { members: { $elemMatch: { user: userId, status: "accepted" } } }],
   };
+}
+
+function resolveAppUrl() {
+  return (env.APP_URL || "http://localhost:5173").replace(/\/+$/, "");
 }
 
 async function recalcProjectProgress(projectId) {
@@ -20,7 +27,7 @@ async function recalcProjectProgress(projectId) {
 
 async function createProject(req, res, next) {
   try {
-    const { title, description, category, color, status, startDate, targetDate, members = [] } = req.body;
+    const { title, description, category, color, status, startDate, targetDate } = req.body;
     if (!title || title.trim().length < 3) {
       res.status(400);
       throw new Error("Project title must be at least 3 characters");
@@ -35,7 +42,7 @@ async function createProject(req, res, next) {
       status: status || "active",
       startDate: startDate || null,
       targetDate: targetDate || null,
-      members: [{ user: req.user._id, role: "owner" }, ...members],
+      members: [{ user: req.user._id, email: req.user.email, role: "owner", status: "accepted", acceptedAt: new Date() }],
       tasks: [],
       progress: 0,
     });
@@ -81,7 +88,7 @@ async function getProjectById(req, res, next) {
       throw new Error("Project not found");
     }
 
-    const tasks = await Task.find({ projectId: project._id, user: req.user._id }).sort({ createdAt: -1 });
+    const tasks = await Task.find({ projectId: project._id }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: { project, tasks } });
   } catch (error) {
     next(error);
@@ -90,7 +97,7 @@ async function getProjectById(req, res, next) {
 
 async function updateProject(req, res, next) {
   try {
-    const project = await Project.findOne({ _id: req.params.id, ...projectAccessQuery(req.user._id) });
+    const project = await Project.findOne({ _id: req.params.id, owner: req.user._id });
     if (!project) {
       res.status(404);
       throw new Error("Project not found");
@@ -104,9 +111,6 @@ async function updateProject(req, res, next) {
     if (status !== undefined) project.status = status;
     if (startDate !== undefined) project.startDate = startDate || null;
     if (targetDate !== undefined) project.targetDate = targetDate || null;
-    if (members !== undefined && Array.isArray(members)) {
-      project.members = members;
-    }
     await project.save();
 
     await ActivityLog.create({
@@ -126,7 +130,7 @@ async function updateProject(req, res, next) {
 
 async function archiveProject(req, res, next) {
   try {
-    const project = await Project.findOne({ _id: req.params.id, ...projectAccessQuery(req.user._id) });
+    const project = await Project.findOne({ _id: req.params.id, owner: req.user._id });
     if (!project) {
       res.status(404);
       throw new Error("Project not found");
@@ -162,7 +166,7 @@ async function linkTaskToProject(req, res, next) {
       res.status(404);
       throw new Error("Project not found");
     }
-    const task = await Task.findOne({ _id: taskId, user: req.user._id });
+    const task = await Task.findOne({ _id: taskId, $or: [{ creator: req.user._id }, { assignedTo: req.user._id }] });
     if (!task) {
       res.status(404);
       throw new Error("Task not found");
@@ -176,6 +180,80 @@ async function linkTaskToProject(req, res, next) {
   }
 }
 
+async function inviteProjectMember(req, res, next) {
+  try {
+    const { projectId, email, role = "member" } = req.body;
+    const project = await Project.findOne({ _id: projectId, owner: req.user._id });
+    if (!project) {
+      res.status(404);
+      throw new Error("Project not found or not owned by user");
+    }
+    const normalizedEmail = String(email || "").toLowerCase().trim();
+    if (!normalizedEmail) {
+      res.status(400);
+      throw new Error("Valid email is required");
+    }
+    const alreadyAccepted = project.members.some((m) => m.email === normalizedEmail && m.status === "accepted");
+    if (alreadyAccepted) {
+      res.status(409);
+      throw new Error("Member already added");
+    }
+    const inviteToken = createRandomToken();
+    const tokenHash = hashToken(inviteToken);
+    project.members = project.members.filter((m) => !(m.email === normalizedEmail && m.status === "pending"));
+    project.members.push({ email: normalizedEmail, role, status: "pending", inviteTokenHash: tokenHash, invitedAt: new Date() });
+    await project.save();
+
+    const inviteUrl = `${resolveAppUrl()}/dashboard/projects?inviteToken=${inviteToken}`;
+    await sendEmail({
+      to: normalizedEmail,
+      subject: `TaskFlow invite: ${project.title}`,
+      html: `<p>You were invited to collaborate on <b>${project.title}</b>.</p><p><a href="${inviteUrl}">Accept Invitation</a></p><p>${inviteUrl}</p>`,
+    });
+
+    res.status(200).json({ success: true, message: "Invitation sent" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function acceptProjectInvite(req, res, next) {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      res.status(400);
+      throw new Error("Invitation token is required");
+    }
+    const tokenHash = hashToken(token);
+    const project = await Project.findOne({ members: { $elemMatch: { inviteTokenHash: tokenHash, status: "pending" } } }).populate("owner", "email fullName");
+    if (!project) {
+      res.status(400);
+      throw new Error("Invalid or expired invitation");
+    }
+
+    const member = project.members.find((m) => m.inviteTokenHash === tokenHash && m.status === "pending");
+    if (!member || member.email !== req.user.email.toLowerCase().trim()) {
+      res.status(403);
+      throw new Error("Invite does not match this account");
+    }
+    member.user = req.user._id;
+    member.status = "accepted";
+    member.acceptedAt = new Date();
+    member.inviteTokenHash = null;
+    await project.save();
+
+    await sendEmail({
+      to: project.owner.email,
+      subject: `Invite accepted: ${project.title}`,
+      html: `<p>${req.user.fullName} (${req.user.email}) accepted your invite to <b>${project.title}</b>.</p>`,
+    });
+
+    res.status(200).json({ success: true, message: "Invitation accepted", data: project });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
@@ -184,5 +262,7 @@ module.exports = {
   archiveProject,
   deleteProject,
   linkTaskToProject,
+  inviteProjectMember,
+  acceptProjectInvite,
   recalcProjectProgress,
 };

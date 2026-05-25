@@ -1,5 +1,30 @@
 /* global.css */
 
+:root,
+.theme-light {
+  --brand-primary: #0E7490;
+  --brand-secondary: #4F46E5;
+  --brand-accent: #F97316;
+  --surface: #ffffff;
+  --surface-subtle: #F8FAFC;
+  --app-bg: linear-gradient(180deg, #F8FAFC 0%, #EEF7F9 100%);
+  --line-soft: #D1D5DB;
+  --text-primary: #0F172A;
+  --text-muted: #64748B;
+}
+
+.theme-dark {
+  --brand-primary: #14B8A6;
+  --brand-secondary: #818CF8;
+  --brand-accent: #FB923C;
+  --surface: #111827;
+  --surface-subtle: #1F2937;
+  --app-bg: linear-gradient(180deg, #0B1220 0%, #111827 100%);
+  --line-soft: #374151;
+  --text-primary: #E5E7EB;
+  --text-muted: #9CA3AF;
+}
+
 /* --- Reset & Base Elements --- */
 body {
   font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
@@ -9,6 +34,11 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.app-bg {
+  background: var(--app-bg);
+  color: var(--text-primary);
 }
 
 /* Scrollbar styling */
@@ -138,8 +168,8 @@ body {
 
 /* Cards */
 .card {
-  background-color: #ffffff;
-  border: 1px solid var(--color-mist-200);
+  background-color: var(--surface);
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(8, 47, 56, 0.02), 0 1px 3px rgba(8, 47, 56, 0.04);

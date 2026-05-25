@@ -13,7 +13,6 @@ const OverviewTab = lazy(() => import('../pages/dashboard/OverviewTab'));
 const TasksTab = lazy(() => import('../pages/dashboard/TasksTab'));
 const ProjectsTab = lazy(() => import('../pages/dashboard/ProjectsTab'));
 const AnalyticsTab = lazy(() => import('../pages/dashboard/AnalyticsTab'));
-const TeamTab = lazy(() => import('../pages/dashboard/TeamTab'));
 const ProfileTab = lazy(() => import('../pages/dashboard/ProfileTab'));
 const ComingSoonTab = lazy(() => import('../pages/dashboard/ComingSoonTab'));
 
@@ -37,10 +36,7 @@ export default function AppRoutes() {
             <Route path="calendar" element={<Navigate to="/dashboard/tasks?view=calendar" replace />} />
             <Route path="profile" element={<ProfileTab />} />
             <Route path="analytics" element={<AnalyticsTab />} />
-            <Route path="team" element={<TeamTab />} />
             <Route path="notifications" element={<ComingSoonTab />} />
-            <Route path="ai" element={<ComingSoonTab />} />
-            <Route path="settings" element={<ComingSoonTab />} />
           </Route>
         </Route>
       </Routes>

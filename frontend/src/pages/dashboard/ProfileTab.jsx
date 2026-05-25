@@ -64,13 +64,17 @@ export default function ProfileTab() {
         <div className="card p-5"><p className="text-xs text-[#5B9EA8]">Completed Tasks</p><p className="font-semibold text-[#082F38]">{overview.completedTasks || 0}</p></div>
         <div className="card p-5"><p className="text-xs text-[#5B9EA8]">Pending Tasks</p><p className="font-semibold text-[#082F38]">{overview.pendingTasks || 0}</p></div>
         <div className="card p-5"><p className="text-xs text-[#5B9EA8]">Completion %</p><p className="font-semibold text-[#082F38]">{overview.completionRate || 0}%</p></div>
+        <div className="card p-5"><p className="text-xs text-[#5B9EA8]">Project Count</p><p className="font-semibold text-[#082F38]">{overview.activeProjects || 0}</p></div>
       </section>}
 
       {activeTab === "settings" && (
-        <section className="card p-6">
-          <h3 className="font-semibold text-[#082F38]">Settings</h3>
-          <p className="text-sm text-[#5B9EA8] mt-2">Appearance, account, and notification settings are managed through Edit Profile.</p>
-          <button className="btn btn-primary mt-4" onClick={openProfileModal}>Open Edit Profile</button>
+        <section className="card p-6 grid md:grid-cols-3 gap-4">
+          <div className="rounded-lg border border-[#E2F4F6] p-4"><p className="text-xs text-[#5B9EA8]">Theme</p><p className="font-semibold text-[#082F38] capitalize">{user.themePreference || "light"}</p></div>
+          <div className="rounded-lg border border-[#E2F4F6] p-4"><p className="text-xs text-[#5B9EA8]">Notifications</p><p className="font-semibold text-[#082F38]">Configured in Edit Profile</p></div>
+          <div className="rounded-lg border border-[#E2F4F6] p-4"><p className="text-xs text-[#5B9EA8]">Account</p><p className="font-semibold text-[#082F38]">Password, sessions, providers</p></div>
+          <div className="md:col-span-3">
+            <button className="btn btn-primary" onClick={openProfileModal}>Open Edit Profile</button>
+          </div>
         </section>
       )}
 

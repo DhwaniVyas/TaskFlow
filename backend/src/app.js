@@ -37,15 +37,10 @@ const {
   archiveProject,
   deleteProject,
   linkTaskToProject,
+  inviteProjectMember,
+  acceptProjectInvite,
 } = require("./controllers/projectController");
 const { getAnalytics } = require("./controllers/analyticsController");
-const {
-  inviteMember,
-  assignTask,
-  addComment,
-  getTaskComments,
-  getActivity,
-} = require("./controllers/teamController");
 
 const { protect } = require("./middleware/authMiddleware");
 const requestLogger = require("./middleware/requestLogger");
@@ -163,16 +158,11 @@ app.put("/api/projects/:id", protect, updateProject);
 app.patch("/api/projects/:id/archive", protect, archiveProject);
 app.delete("/api/projects/:id", protect, deleteProject);
 app.patch("/api/projects/:id/link-task", protect, linkTaskToProject);
+app.post("/api/projects/invite", protect, inviteProjectMember);
+app.post("/api/projects/accept-invite", protect, acceptProjectInvite);
 
 // Analytics
 app.get("/api/analytics", protect, getAnalytics);
-
-// Team / Collaboration
-app.post("/api/team/invite", protect, inviteMember);
-app.post("/api/team/assign", protect, assignTask);
-app.post("/api/team/comments", protect, addComment);
-app.get("/api/team/comments/:taskId", protect, getTaskComments);
-app.get("/api/team/activity", protect, getActivity);
 
 /*
 |--------------------------------------------------------------------------
