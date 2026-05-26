@@ -4,6 +4,7 @@ const Project = require("../models/Project");
 const User = require("../models/User");
 const Comment = require("../models/Comment");
 const ActivityLog = require("../models/ActivityLog");
+const { triggerNotification } = require("../utils/notificationService");
 
 async function hasProjectMemberAccess(projectId, userId) {
   if (!mongoose.Types.ObjectId.isValid(projectId)) return false;
@@ -53,6 +54,14 @@ async function assignTask(req, res, next) {
     task.assignedBy = req.user._id;
     task.assignedAt = new Date();
     await task.save();
+
+    await triggerNotification({
+      userId: assignee._id,
+      type: "task_assigned",
+      category: "Task",
+      message: `You have been assigned to task '${task.title}' by ${req.user.fullName}.`,
+      relatedEntity: task._id.toString(),
+    });
 
     await ActivityLog.create({
       user: assignee._id,

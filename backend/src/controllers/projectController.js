@@ -6,6 +6,8 @@ const ActivityLog = require("../models/ActivityLog");
 const { createRandomToken, hashToken } = require("../utils/token");
 const { sendEmail } = require("../utils/mailer");
 const { env } = require("../config/env");
+const User = require("../models/User");
+const { triggerNotification } = require("../utils/notificationService");
 
 function projectAccessQuery(userId) {
   return {
@@ -55,6 +57,14 @@ async function createProject(req, res, next) {
       entityType: "project",
       entityId: project._id,
       meta: { projectId: project._id },
+    });
+
+    await triggerNotification({
+      userId: req.user._id,
+      type: "project_creation",
+      category: "Project",
+      message: `Project '${project.title}' created successfully.`,
+      relatedEntity: project._id.toString(),
     });
 
     res.status(201).json({ success: true, message: "Project created", data: project });
@@ -114,6 +124,18 @@ async function updateProject(req, res, next) {
     if (targetDate !== undefined) project.targetDate = targetDate || null;
     await project.save();
 
+    for (const m of project.members) {
+      if (m.status === "accepted" && m.user && String(m.user) !== String(req.user._id)) {
+        await triggerNotification({
+          userId: m.user,
+          type: "project_update",
+          category: "Project",
+          message: `Project '${project.title}' has been updated by ${req.user.fullName}.`,
+          relatedEntity: project._id.toString(),
+        });
+      }
+    }
+
     await ActivityLog.create({
       user: req.user._id,
       actor: req.user._id,
@@ -138,6 +160,19 @@ async function archiveProject(req, res, next) {
     }
     project.status = "archived";
     await project.save();
+
+    for (const m of project.members) {
+      if (m.status === "accepted" && m.user && String(m.user) !== String(req.user._id)) {
+        await triggerNotification({
+          userId: m.user,
+          type: "project_update",
+          category: "Project",
+          message: `Project '${project.title}' has been archived.`,
+          relatedEntity: project._id.toString(),
+        });
+      }
+    }
+
     res.status(200).json({ success: true, message: "Project archived", data: project });
   } catch (error) {
     next(error);
@@ -205,6 +240,17 @@ async function inviteProjectMember(req, res, next) {
     project.members.push({ email: normalizedEmail, role, status: "pending", inviteTokenHash: tokenHash, invitedAt: new Date() });
     await project.save();
 
+    const invitedUser = await User.findOne({ email: normalizedEmail });
+    if (invitedUser) {
+      await triggerNotification({
+        userId: invitedUser._id,
+        type: "project_invite",
+        category: "Project",
+        message: `You have been invited to Project '${project.title}' by ${req.user.fullName}.`,
+        relatedEntity: project._id.toString(),
+      });
+    }
+
     const inviteUrl = `${resolveAppUrl()}/dashboard/projects?inviteToken=${inviteToken}`;
     await sendEmail({
       to: normalizedEmail,
@@ -250,6 +296,14 @@ async function acceptProjectInvite(req, res, next) {
 
     project.markModified("members");
     await project.save();
+
+    await triggerNotification({
+      userId: project.owner._id,
+      type: "invite_acceptance",
+      category: "Project",
+      message: `${req.user.fullName} accepted your invitation to Project '${project.title}'.`,
+      relatedEntity: project._id.toString(),
+    });
 
     await sendEmail({
       to: project.owner.email,

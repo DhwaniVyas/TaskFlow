@@ -547,30 +547,39 @@ export default function ProjectsTab() {
                         </div>
                         <textarea className="form-textarea w-full" rows={3} placeholder="Task description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
                         
-                        <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
-                          <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
-                            <option value="">Select Priority</option>
-                            <option value="low">Low Priority</option>
-                            <option value="medium">Medium Priority</option>
-                            <option value="high">High Priority</option>
-                          </select>
-                          <select className="form-select" value={taskForm.status} onChange={(e) => setTaskForm((prev) => ({ ...prev, status: e.target.value }))} required>
-                            <option value="">Select Status</option>
-                            <option value="todo">Todo</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                          </select>
-                          <select className="form-select" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))} required>
-                            <option value="">Select Member</option>
-                            {acceptedMembers.filter(m => m.role !== "viewer").map((member) => (
-                              <option key={member.user?._id || member.email} value={member.user?._id || ""}>
-                                {member.user?.fullName || member.email}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="space-y-1">
+                            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-semibold">Priority</p>
+                            <select className="form-select w-full" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
+                              <option value="">Select Priority</option>
+                              <option value="low">Low Priority</option>
+                              <option value="medium">Medium Priority</option>
+                              <option value="high">High Priority</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-semibold">Status</p>
+                            <select className="form-select w-full" value={taskForm.status} onChange={(e) => setTaskForm((prev) => ({ ...prev, status: e.target.value }))} required>
+                              <option value="">Select Status</option>
+                              <option value="todo">Todo</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-semibold">Assignee</p>
+                            <select className="form-select w-full" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))} required>
+                              <option value="">Select Member</option>
+                              {acceptedMembers.filter(m => m.role !== "viewer").map((member) => (
+                                <option key={member.user?._id || member.email} value={member.user?._id || ""}>
+                                  {member.user?.fullName || member.email}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                           <div className="space-y-1">
                             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-semibold">Deadline</p>
-                            <input type="datetime-local" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} required />
+                            <input type="datetime-local" className="form-input w-full" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} required />
                           </div>
                         </div>
 

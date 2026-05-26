@@ -24,6 +24,7 @@ function sanitizeUser(user) {
     timezone: user.timezone,
     themePreference: user.themePreference,
     notificationPreferences: user.notificationPreferences,
+    phoneNumber: user.phoneNumber || "",
     emailVerified: user.emailVerified,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
@@ -368,7 +369,7 @@ async function getMe(req, res, next) {
 
 async function updateProfile(req, res, next) {
   try {
-    const { fullName, avatar, bio, timezone, themePreference, password, notificationPreferences } = req.body;
+    const { fullName, avatar, bio, timezone, themePreference, password, notificationPreferences, phoneNumber } = req.body;
 
     if (!fullName || !fullName.trim()) {
       res.status(400);
@@ -392,6 +393,14 @@ async function updateProfile(req, res, next) {
         throw new Error("Invalid theme preference");
       }
       user.themePreference = themePreference;
+    }
+    if (phoneNumber !== undefined) {
+      const cleanPhone = String(phoneNumber || "").trim();
+      if (cleanPhone && !/^\+?[0-9\s\-()]{7,20}$/.test(cleanPhone)) {
+        res.status(400);
+        throw new Error("Invalid phone number format. Use standard or E.164 format (e.g. +1234567890)");
+      }
+      user.phoneNumber = cleanPhone;
     }
     if (notificationPreferences && typeof notificationPreferences === "object") {
       user.notificationPreferences = {

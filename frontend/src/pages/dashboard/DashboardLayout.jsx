@@ -17,6 +17,7 @@ const tabConfig = [
   { key: "tasks", label: "Tasks", path: "/dashboard/tasks", comingSoon: false },
   { key: "projects", label: "Projects", path: "/dashboard/projects", comingSoon: false },
   { key: "analytics", label: "Analytics", path: "/dashboard/analytics", comingSoon: false },
+  { key: "notifications", label: "Notifications", path: "/dashboard/notifications", comingSoon: false },
   { key: "profile", label: "Profile & Settings", path: "/dashboard/profile", comingSoon: false },
 ];
 

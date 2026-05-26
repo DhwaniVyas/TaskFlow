@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Task = require("../models/Task");
 const Project = require("../models/Project");
 const { recalcProjectProgress } = require("./projectController");
+const { triggerNotification } = require("../utils/notificationService");
 
 const allowedStatus = ["todo", "in_progress", "completed"];
 const allowedPriority = ["low", "medium", "high"];
@@ -141,6 +142,24 @@ async function createTask(req, res, next) {
     });
     await recalcProjectProgress(task.projectId);
 
+    await triggerNotification({
+      userId: req.user._id,
+      type: "task_created",
+      category: "Task",
+      message: `Task '${task.title}' created successfully.`,
+      relatedEntity: task._id.toString(),
+    });
+
+    if (task.assignedTo && String(task.assignedTo) !== String(req.user._id)) {
+      await triggerNotification({
+        userId: task.assignedTo,
+        type: "task_assigned",
+        category: "Task",
+        message: `You have been assigned to task '${task.title}'.`,
+        relatedEntity: task._id.toString(),
+      });
+    }
+
     res.status(201).json({ success: true, message: "Task created", data: task });
   } catch (error) {
     next(error);
@@ -213,6 +232,9 @@ async function updateTask(req, res, next) {
     }
 
     const oldProjectId = task.projectId ? String(task.projectId) : null;
+    const oldAssignee = task.assignedTo ? String(task.assignedTo) : null;
+    const oldStatus = task.status;
+
     if (!task.creator) task.creator = task.user || req.user._id;
     if (req.body.title !== undefined) task.title = req.body.title.trim();
     if (req.body.description !== undefined) task.description = String(req.body.description || "").trim();
@@ -236,6 +258,28 @@ async function updateTask(req, res, next) {
     }
 
     await task.save();
+
+    const newAssignee = task.assignedTo ? String(task.assignedTo) : null;
+    if (newAssignee && newAssignee !== oldAssignee && newAssignee !== String(req.user._id)) {
+      await triggerNotification({
+        userId: newAssignee,
+        type: "task_assigned",
+        category: "Task",
+        message: `You have been assigned to task '${task.title}'.`,
+        relatedEntity: task._id.toString(),
+      });
+    }
+
+    if (task.status === "completed" && oldStatus !== "completed") {
+      const recipient = task.assignedTo || task.user;
+      await triggerNotification({
+        userId: recipient,
+        type: "task_completed",
+        category: "Task",
+        message: `Task '${task.title}' has been marked as completed.`,
+        relatedEntity: task._id.toString(),
+      });
+    }
     if (oldProjectId !== (task.projectId ? String(task.projectId) : null)) {
       await recalcProjectProgress(oldProjectId);
       await recalcProjectProgress(task.projectId);
@@ -399,6 +443,18 @@ async function updateTaskStatus(req, res, next) {
 
     task.status = status;
     await task.save();
+
+    if (status === "completed") {
+      const recipient = task.assignedTo || task.user;
+      await triggerNotification({
+        userId: recipient,
+        type: "task_completed",
+        category: "Task",
+        message: `Task '${task.title}' has been marked as completed.`,
+        relatedEntity: task._id.toString(),
+      });
+    }
+
     await recalcProjectProgress(task.projectId);
     res.status(200).json({ success: true, message: "Task status updated", data: task });
   } catch (error) {

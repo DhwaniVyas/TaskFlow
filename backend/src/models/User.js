@@ -50,11 +50,13 @@ const userSchema = new mongoose.Schema(
       default: "light",
     },
     notificationPreferences: {
-      email: { type: Boolean, default: true },
-      assignment: { type: Boolean, default: true },
-      reminder: { type: Boolean, default: true },
       project: { type: Boolean, default: true },
-      comments: { type: Boolean, default: true },
+      task: { type: Boolean, default: true },
+    },
+    phoneNumber: {
+      type: String,
+      default: "",
+      trim: true,
     },
     lastLoginAt: {
       type: Date,

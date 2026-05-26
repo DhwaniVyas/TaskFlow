@@ -15,6 +15,7 @@ const TasksTab = lazy(() => import('../pages/dashboard/TasksTab'));
 const ProjectsTab = lazy(() => import('../pages/dashboard/ProjectsTab'));
 const AnalyticsTab = lazy(() => import('../pages/dashboard/AnalyticsTab'));
 const ProfileTab = lazy(() => import('../pages/dashboard/ProfileTab'));
+const NotificationsTab = lazy(() => import('../pages/dashboard/NotificationsTab'));
 
 export default function AppRoutes() {
   return (
@@ -35,6 +36,7 @@ export default function AppRoutes() {
             <Route path="board" element={<Navigate to="/dashboard/tasks?view=board" replace />} />
             <Route path="calendar" element={<Navigate to="/dashboard/tasks?view=calendar" replace />} />
             <Route path="profile" element={<ProfileTab />} />
+            <Route path="notifications" element={<NotificationsTab />} />
             <Route path="analytics" element={<AnalyticsTab />} />
           </Route>
         </Route>

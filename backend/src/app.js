@@ -43,6 +43,7 @@ const {
 } = require("./controllers/projectController");
 const { getAnalytics } = require("./controllers/analyticsController");
 const { assignTask, addComment, getTaskComments } = require("./controllers/teamController");
+const { getNotifications } = require("./controllers/notificationController");
 
 const { protect } = require("./middleware/authMiddleware");
 const requestLogger = require("./middleware/requestLogger");
@@ -169,6 +170,9 @@ app.get("/api/projects/:id/comments", protect, getProjectComments);
 
 // Analytics
 app.get("/api/analytics", protect, getAnalytics);
+
+// Notifications History
+app.get("/api/notifications", protect, getNotifications);
 
 /*
 |--------------------------------------------------------------------------

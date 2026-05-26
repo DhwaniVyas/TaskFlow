@@ -6,12 +6,10 @@ const initialProfileForm = {
   bio: "",
   timezone: "",
   themePreference: "light",
+  phoneNumber: "",
   notificationPreferences: {
-    email: true,
-    assignment: true,
-    reminder: true,
     project: true,
-    comments: true,
+    task: true,
   },
   password: "",
 };
@@ -34,12 +32,10 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
       bio: user.bio || "",
       timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
       themePreference: user.themePreference || "light",
+      phoneNumber: user.phoneNumber || "",
       notificationPreferences: {
-        email: user.notificationPreferences?.email ?? true,
-        assignment: user.notificationPreferences?.assignment ?? true,
-        reminder: user.notificationPreferences?.reminder ?? true,
         project: user.notificationPreferences?.project ?? true,
-        comments: user.notificationPreferences?.comments ?? true,
+        task: user.notificationPreferences?.task ?? true,
       },
       password: "",
     });
@@ -53,6 +49,7 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
       form.bio !== (user.bio || "") ||
       form.timezone !== (user.timezone || "") ||
       form.themePreference !== (user.themePreference || "light") ||
+      form.phoneNumber !== (user.phoneNumber || "") ||
       JSON.stringify(form.notificationPreferences) !== JSON.stringify(user.notificationPreferences || initialProfileForm.notificationPreferences) ||
       form.password !== ""
     );
@@ -93,6 +90,15 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
                 value={form.fullName}
                 onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
                 required
+              />
+            </div>
+            <div>
+              <label className="form-label">Phone Number (SMS Alerts)</label>
+              <input
+                className="form-input w-full"
+                value={form.phoneNumber}
+                onChange={(e) => setForm((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                placeholder="e.g. +1234567890 (optional)"
               />
             </div>
           </div>
@@ -153,15 +159,12 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
 
           <div>
             <label className="form-label">Notifications</label>
-            <div className="grid md:grid-cols-5 gap-2 mt-2">
+            <div className="grid md:grid-cols-2 gap-3 mt-2">
               {[
-                ["email", "Email"],
-                ["assignment", "Assignment"],
-                ["reminder", "Reminder"],
-                ["project", "Project"],
-                ["comments", "Comments"],
+                ["project", "Project Notifications"],
+                ["task", "Task Notifications"],
               ].map(([key, label]) => (
-                <label key={key} className="text-xs text-[#5B9EA8] flex items-center gap-2 border border-[#E2F4F6] rounded px-2 py-2">
+                <label key={key} className="text-xs text-[var(--text-primary)] flex items-center gap-2 border border-[var(--line-soft)] bg-[var(--surface-subtle)] rounded px-3 py-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={Boolean(form.notificationPreferences[key])}
@@ -181,9 +184,9 @@ export default function ProfileEditModal({ open, user, saving, onSave, onClose }
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-[#5B9EA8]">
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
             <span>{isDirty ? "Unsaved changes" : "No pending changes"}</span>
-            <span>Email/provider/joined date are read-only</span>
+            <span>Email, provider, and joined date are read-only</span>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
