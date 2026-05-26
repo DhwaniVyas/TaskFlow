@@ -16,9 +16,17 @@ async function getAnalytics(req, res, next) {
     const range = req.query.range || "month";
     const { start, end } = rangeToDates(range);
 
+    const taskAccessQuery = {
+      $or: [
+        { creator: req.user._id, projectId: null },
+        { user: req.user._id, projectId: null },
+        { assignedTo: req.user._id },
+      ],
+    };
+
     const [allTasks, periodTasks, projects] = await Promise.all([
-      Task.find({ user: req.user._id }),
-      Task.find({ user: req.user._id, createdAt: { $gte: start, $lte: end } }),
+      Task.find(taskAccessQuery),
+      Task.find({ ...taskAccessQuery, createdAt: { $gte: start, $lte: end } }),
       Project.find({ $or: [{ owner: req.user._id }, { "members.user": req.user._id }] }),
     ]);
 

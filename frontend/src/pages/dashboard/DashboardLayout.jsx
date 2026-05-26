@@ -54,6 +54,22 @@ export default function DashboardLayout() {
     const bootstrap = async () => {
       try {
         await refreshDashboard();
+        
+        // Auto-accept pending invite if one exists
+        const pendingToken = sessionStorage.getItem("pending_invite_token");
+        if (pendingToken) {
+          try {
+            await api.post("/projects/accept-invite", { token: pendingToken });
+            sessionStorage.removeItem("pending_invite_token");
+            showToast("Project invitation accepted!");
+            // Refresh to load the newly accepted project data
+            await refreshDashboard();
+          } catch (inviteErr) {
+            console.error("Auto-accept invite error:", inviteErr);
+            sessionStorage.removeItem("pending_invite_token");
+            showToast(inviteErr?.response?.data?.message || "Failed to accept project invitation");
+          }
+        }
       } catch (err) {
         setError(err?.response?.data?.message || "Failed to load dashboard");
       } finally {

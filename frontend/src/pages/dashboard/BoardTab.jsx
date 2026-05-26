@@ -88,8 +88,11 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
                     key={task._id}
                     draggable
                     onDragStart={() => setDragTaskId(task._id)}
-                    className="bg-white border rounded-xl p-3 cursor-grab active:cursor-grabbing"
-                    style={{ borderColor: isProjectTask ? `${projectColor}70` : "#C4E9ED99" }}
+                    className="bg-white border rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-sm"
+                    style={{ 
+                      borderColor: isProjectTask ? `${projectColor}40` : "#C4E9ED99",
+                      borderLeft: isProjectTask ? `4px solid ${projectColor}` : "4px solid #C4E9ED"
+                    }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-sm font-semibold text-[#082F38]">{task.title}</h4>

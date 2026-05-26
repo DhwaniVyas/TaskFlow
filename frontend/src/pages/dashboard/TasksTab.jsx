@@ -433,8 +433,11 @@ export default function TasksTab() {
                 return (
                   <div
                     key={task._id}
-                    className="rounded-2xl border p-4 bg-white shadow-sm"
-                    style={{ borderColor: isProjectTask ? `${projectColor}66` : "#C4E9ED80" }}
+                    className="rounded-2xl border p-4 bg-white shadow-sm transition-all hover:shadow-md"
+                    style={{ 
+                      borderColor: isProjectTask ? `${projectColor}40` : "#C4E9ED80",
+                      borderLeft: isProjectTask ? `5px solid ${projectColor}` : `5px solid #C4E9ED`
+                    }}
                   >
                     <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -674,7 +677,7 @@ export default function TasksTab() {
                 </div>
               )}
 
-              <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
+              <div className="equal-split-row relaxed" style={{ "--split-count": 3 }}>
                 <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
                   <option value="low">Low Priority</option>
                   <option value="medium">Medium Priority</option>
@@ -687,29 +690,18 @@ export default function TasksTab() {
                 </select>
                 <div className="space-y-1">
                   <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Deadline</p>
-                  <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Estimated Hours</p>
-                  <input
-                    type="number"
-                    min="0"
-                    className="form-input"
-                    value={taskForm.estimatedDuration}
-                    onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
-                    placeholder="Optional"
-                  />
+                  <input type="date" className="form-input w-full" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
                 </div>
               </div>
 
               <div className="rounded-xl border border-[#E2F4F6] bg-[#F8FCFD] px-4 py-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="font-medium text-[#082F38]">Optional planning details</p>
-                    <p className="text-xs text-[#5B9EA8] mt-1">Use this only when you need a planned work date in addition to the main deadline.</p>
+                    <p className="font-medium text-[#082F38]">Optional Scheduling & Estimates</p>
+                    <p className="text-xs text-[#5B9EA8] mt-1">Add planned work date or duration details only where necessary.</p>
                   </div>
                   <button type="button" className="btn btn-secondary !text-xs" onClick={() => setShowSchedulingFields((prev) => !prev)}>
-                    {showSchedulingFields ? "Hide Planning Fields" : "Add Planning Fields"}
+                    {showSchedulingFields ? "Hide Optional Scheduling" : "Add Optional Scheduling"}
                   </button>
                 </div>
 
@@ -719,13 +711,21 @@ export default function TasksTab() {
                       <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Planning Date</p>
                       <input
                         type="date"
-                        className="form-input"
+                        className="form-input w-full"
                         value={taskForm.scheduledDate}
                         onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))}
                       />
                     </div>
-                    <div className="rounded-xl border border-[#E2F4F6] bg-white px-4 py-3 text-sm text-[#5B9EA8] flex items-center gap-2">
-                      <FiCalendar /> Scheduling is optional. Deadline remains the primary commitment date.
+                    <div className="space-y-1">
+                      <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Estimated Hours</p>
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-input w-full"
+                        value={taskForm.estimatedDuration}
+                        onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
+                        placeholder="Optional"
+                      />
                     </div>
                   </div>
                 )}

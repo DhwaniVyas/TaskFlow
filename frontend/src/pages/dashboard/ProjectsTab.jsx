@@ -20,6 +20,7 @@ const initialProjectTask = {
   status: "todo",
   dueDate: "",
   scheduledDate: "",
+  estimatedDuration: "",
   assignedTo: "",
 };
 
@@ -53,7 +54,11 @@ function CommentThread({ comment, level = 0, onReply }) {
   const authorName = comment.user?.fullName || "User";
 
   return (
-    <div className={`rounded-xl border border-[#E2E8F0] bg-white p-3 ${level > 0 ? "ml-4 mt-2" : ""}`}>
+    <div className={`rounded-xl bg-white p-3.5 transition-all ${
+      level > 0 
+        ? "ml-4 mt-2 border-l-2 border-[#E2F4F6] pl-4" 
+        : "border border-[#E2F4F6] shadow-sm"
+    }`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-[#082F38]">{authorName}</p>
@@ -258,6 +263,7 @@ export default function ProjectsTab() {
       status: task.status || "todo",
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
       scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
+      estimatedDuration: task.estimatedDuration ?? "",
       assignedTo: task.assignedTo || "",
     });
     setShowTaskScheduling(Boolean(task.scheduledDate));
@@ -272,6 +278,7 @@ export default function ProjectsTab() {
         projectId: openProject.project._id,
         assignedTo: taskForm.assignedTo || null,
         scheduledDate: showTaskScheduling ? taskForm.scheduledDate || null : null,
+        estimatedDuration: showTaskScheduling && taskForm.estimatedDuration !== "" ? Number(taskForm.estimatedDuration) : null,
       };
       if (editingTaskId) {
         await api.put(`/tasks/${editingTaskId}`, payload);
@@ -524,16 +531,30 @@ export default function ProjectsTab() {
                         <div className="rounded-xl border border-[#E2F4F6] bg-[#F8FCFD] px-4 py-4">
                           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                             <div>
-                              <p className="font-medium text-[#082F38]">Optional planning date</p>
-                              <p className="text-xs text-[#5B9EA8] mt-1">Keep one main deadline, then add planning detail only if the team needs it.</p>
+                              <p className="font-medium text-[#082F38]">Optional Scheduling & Estimates</p>
+                              <p className="text-xs text-[#5B9EA8] mt-1">Add planned work date or duration details only where necessary.</p>
                             </div>
                             <button type="button" className="btn btn-secondary !text-xs" onClick={() => setShowTaskScheduling((prev) => !prev)}>
-                              {showTaskScheduling ? "Hide Planning Date" : "Add Planning Date"}
+                              {showTaskScheduling ? "Hide Optional Scheduling" : "Add Optional Scheduling"}
                             </button>
                           </div>
                           {showTaskScheduling && (
-                            <div className="mt-4">
-                              <input type="date" className="form-input" value={taskForm.scheduledDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))} />
+                            <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 2 }}>
+                              <div className="space-y-1">
+                                <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Planning Date</p>
+                                <input type="date" className="form-input w-full" value={taskForm.scheduledDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))} />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Estimated Hours</p>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  className="form-input w-full"
+                                  value={taskForm.estimatedDuration}
+                                  onChange={(e) => setTaskForm((prev) => ({ ...prev, estimatedDuration: e.target.value }))}
+                                  placeholder="Optional"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
@@ -578,6 +599,8 @@ export default function ProjectsTab() {
                                       {task.status.replace("_", " ")}
                                     </span>
                                     <span className="text-[#5B9EA8]">Deadline: {formatDate(task.dueDate)}</span>
+                                    {task.scheduledDate && <span className="text-[#5B9EA8]">Planned: {formatDate(task.scheduledDate)}</span>}
+                                    {task.estimatedDuration && <span className="text-[#5B9EA8]">Est: {task.estimatedDuration}h</span>}
                                     <span className="text-[#5B9EA8]">Assigned: {assignee?.user?.fullName || "Unassigned"}</span>
                                   </div>
                                 </div>

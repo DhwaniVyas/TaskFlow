@@ -178,14 +178,15 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                           draggable
                           onDragStart={() => setDragTaskId(task._id)}
                           onClick={() => onEditTask?.(task)}
-                          className="w-full text-left text-[11px] p-1 rounded border cursor-pointer"
+                          className="w-full text-left text-[11px] p-1.5 rounded cursor-pointer transition-all hover:brightness-95"
                           style={{
-                            background: isProjectTask ? `${projectColor}14` : "#F0F9FA",
-                            borderColor: isProjectTask ? `${projectColor}50` : "#C4E9ED",
+                            background: isProjectTask ? `${projectColor}15` : "#F0F9FA",
+                            border: `1px solid ${isProjectTask ? `${projectColor}30` : "#C4E9ED"}`,
+                            borderLeft: `3px solid ${isProjectTask ? projectColor : "#0E7490"}`
                           }}
                         >
-                          <p className="font-medium text-[#082F38] truncate">{task.title}</p>
-                          <p style={{ color: isProjectTask ? projectColor : "#5B9EA8" }}>{dueBadge(task)}</p>
+                          <p className="font-semibold text-[#082F38] truncate">{task.title}</p>
+                          <p className="text-[9px] mt-0.5" style={{ color: isProjectTask ? projectColor : "#5B9EA8" }}>{dueBadge(task)}</p>
                         </button>
                       );
                     })}
@@ -212,8 +213,11 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                   <button
                     key={task._id}
                     onClick={() => onEditTask?.(task)}
-                    className="w-full text-left border rounded-lg p-3"
-                    style={{ borderColor: isProjectTask ? `${projectColor}55` : "#E2F4F6" }}
+                    className="w-full text-left border rounded-lg p-3 transition-all hover:shadow-sm"
+                    style={{ 
+                      borderColor: isProjectTask ? `${projectColor}30` : "#E2F4F6",
+                      borderLeft: `4px solid ${isProjectTask ? projectColor : "#C4E9ED"}`
+                    }}
                   >
                     <p className="font-medium text-[#082F38]">{task.title}</p>
                     <p className="text-xs text-[#5B9EA8]">
