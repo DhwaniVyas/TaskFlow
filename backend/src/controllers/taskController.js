@@ -153,21 +153,19 @@ async function getTasks(req, res, next) {
     const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 100);
     const skip = (page - 1) * limit;
 
+    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
+    const ownedProjectIds = ownedProjects.map((p) => p._id);
+    const taskAccessQuery = {
+      $or: [
+        { creator: req.user._id, projectId: null },
+        { user: req.user._id, projectId: null },
+        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+      ],
+    };
+
     const [tasks, total] = await Promise.all([
-      Task.find({
-        $or: [
-          { creator: req.user._id, projectId: null },
-          { user: req.user._id, projectId: null },
-          { assignedTo: req.user._id },
-        ],
-      }).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Task.countDocuments({
-        $or: [
-          { creator: req.user._id, projectId: null },
-          { user: req.user._id, projectId: null },
-          { assignedTo: req.user._id },
-        ],
-      }),
+      Task.find(taskAccessQuery).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Task.countDocuments(taskAccessQuery),
     ]);
     res.status(200).json({
       success: true,
@@ -277,10 +275,20 @@ async function searchTasks(req, res, next) {
     const q = String(req.query.q || "").trim();
     if (!q) return res.status(200).json({ success: true, data: [] });
 
+    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
+    const ownedProjectIds = ownedProjects.map((p) => p._id);
+    const taskAccessQuery = {
+      $or: [
+        { creator: req.user._id, projectId: null },
+        { user: req.user._id, projectId: null },
+        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+      ],
+    };
+
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const tasks = await Task.find({
       $and: [
-        { $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }] },
+        taskAccessQuery,
         { $or: [{ title: regex }, { description: regex }, { "subtasks.title": regex }, { category: regex }] },
       ],
     }).sort({ createdAt: -1 });
@@ -293,8 +301,14 @@ async function searchTasks(req, res, next) {
 
 async function filterTasks(req, res, next) {
   try {
+    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
+    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const query = {
-      $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }],
+      $or: [
+        { creator: req.user._id, projectId: null },
+        { user: req.user._id, projectId: null },
+        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+      ],
     };
     const { status, priority, due, completed } = req.query;
 
@@ -319,6 +333,16 @@ async function sortTasks(req, res, next) {
     const by = String(req.query.by || "createdAt");
     const order = String(req.query.order || "desc").toLowerCase() === "asc" ? 1 : -1;
 
+    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
+    const ownedProjectIds = ownedProjects.map((p) => p._id);
+    const taskAccessQuery = {
+      $or: [
+        { creator: req.user._id, projectId: null },
+        { user: req.user._id, projectId: null },
+        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+      ],
+    };
+
     let sort = { createdAt: -1 };
     if (by === "createdAt") sort = { createdAt: order };
     if (by === "dueDate") sort = { dueDate: order, createdAt: -1 };
@@ -327,9 +351,7 @@ async function sortTasks(req, res, next) {
       // high > medium > low for desc
       const tasks = await Task.aggregate([
         {
-          $match: {
-            $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }],
-          },
+          $match: taskAccessQuery,
         },
         {
           $addFields: {
@@ -351,7 +373,7 @@ async function sortTasks(req, res, next) {
       return res.status(200).json({ success: true, data: tasks });
     }
 
-    const tasks = await Task.find({ $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }] }).sort(sort);
+    const tasks = await Task.find(taskAccessQuery).sort(sort);
     res.status(200).json({ success: true, data: tasks });
   } catch (error) {
     next(error);

@@ -5,8 +5,14 @@ const ActivityLog = require("../models/ActivityLog");
 async function getDashboard(req, res, next) {
   try {
     const now = new Date();
+    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
+    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const taskAccessQuery = {
-      $or: [{ creator: req.user._id, projectId: null }, { user: req.user._id, projectId: null }, { assignedTo: req.user._id }],
+      $or: [
+        { creator: req.user._id, projectId: null },
+        { user: req.user._id, projectId: null },
+        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+      ],
     };
     const totalTasks = await Task.countDocuments(taskAccessQuery);
     const completed = await Task.countDocuments({ ...taskAccessQuery, status: "completed" });

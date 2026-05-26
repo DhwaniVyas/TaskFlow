@@ -314,7 +314,7 @@ export default function TasksTab() {
           </button>
         </div>
 
-        <div className="equal-split-row compact md:max-w-3xl mt-5" style={{ "--split-count": 3 }}>
+        <div className="equal-split-row compact mt-5" style={{ "--split-count": 3, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               currentView === "list" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"

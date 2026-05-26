@@ -16,11 +16,13 @@ async function getAnalytics(req, res, next) {
     const range = req.query.range || "month";
     const { start, end } = rangeToDates(range);
 
+    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
+    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const taskAccessQuery = {
       $or: [
         { creator: req.user._id, projectId: null },
         { user: req.user._id, projectId: null },
-        { assignedTo: req.user._id },
+        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
       ],
     };
 

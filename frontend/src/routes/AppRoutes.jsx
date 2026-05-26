@@ -16,18 +16,11 @@ const ProjectsTab = lazy(() => import('../pages/dashboard/ProjectsTab'));
 const AnalyticsTab = lazy(() => import('../pages/dashboard/AnalyticsTab'));
 const ProfileTab = lazy(() => import('../pages/dashboard/ProfileTab'));
 
-function LandingRedirect() {
-  if (isAuthenticated()) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <Navigate to="/login" replace />;
-}
-
 export default function AppRoutes() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#0E7490]">Loading...</div>}>
       <Routes>
-        <Route path="/" element={<LandingRedirect />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

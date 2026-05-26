@@ -85,7 +85,7 @@ function CommentThread({ comment, level = 0, onReply }) {
 }
 
 export default function ProjectsTab() {
-  const { showToast, dashboardData } = useDashboardWorkspace();
+  const { showToast, dashboardData, refreshDashboard } = useDashboardWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +152,7 @@ export default function ProjectsTab() {
 
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+  }, [fetchProjects, dashboardData?.overview?.activeProjects]);
 
   useEffect(() => {
     const inviteToken = searchParams.get("inviteToken");
@@ -162,12 +162,12 @@ export default function ProjectsTab() {
         await api.post("/projects/accept-invite", { token: inviteToken });
         showToast("Project invitation accepted");
         setSearchParams({});
-        await fetchProjects();
+        await Promise.all([fetchProjects(), refreshDashboard()]);
       } catch (err) {
         showToast(err?.response?.data?.message || "Failed to accept invitation");
       }
     })();
-  }, [fetchProjects, searchParams, setSearchParams, showToast]);
+  }, [fetchProjects, searchParams, setSearchParams, showToast, refreshDashboard]);
 
   const openCreateProject = () => {
     setEditingProject(null);
