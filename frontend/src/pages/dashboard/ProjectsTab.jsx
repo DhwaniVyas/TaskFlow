@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FiFolder, FiMail, FiMessageSquare, FiUsers } from "react-icons/fi";
+import { FiFolder, FiMail, FiMessageSquare, FiUsers, FiClock, FiPlus, FiEdit2, FiTrash2, FiUser, FiCheckCircle } from "react-icons/fi";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
@@ -15,13 +15,14 @@ const initialProject = {
 const initialProjectTask = {
   title: "",
   description: "",
-  category: "Work",
-  priority: "medium",
-  status: "todo",
+  category: "",
+  priority: "",
+  status: "",
   dueDate: "",
   scheduledDate: "",
   estimatedDuration: "",
   assignedTo: "",
+  subtasks: [],
 };
 
 const categories = ["Work", "Study", "Personal", "Meeting", "Development", "Design", "Operations"];
@@ -52,6 +53,7 @@ function buildCommentThreads(comments) {
 
 function CommentThread({ comment, level = 0, onReply }) {
   const authorName = comment.user?.fullName || "User";
+  const taskTitle = comment.task?.title || "Project Task";
 
   return (
     <div className={`rounded-xl bg-white p-3.5 transition-all ${
@@ -62,7 +64,8 @@ function CommentThread({ comment, level = 0, onReply }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-[#082F38]">{authorName}</p>
-          <p className="text-xs text-[#5B9EA8]">{new Date(comment.createdAt).toLocaleString()}</p>
+          <p className="text-xs text-[#5B9EA8] font-medium">On Task: <span className="text-[#0E7490]">{taskTitle}</span></p>
+          <p className="text-xs text-[#5B9EA8] mt-0.5">{new Date(comment.createdAt).toLocaleString()}</p>
         </div>
         <button className="btn btn-secondary !text-xs" onClick={() => onReply(comment)}>
           Reply
@@ -92,7 +95,7 @@ export default function ProjectsTab() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [projectForm, setProjectForm] = useState(initialProject);
-  const [invite, setInvite] = useState({ projectId: "", email: "", role: "member" });
+  const [invite, setInvite] = useState({ projectId: "", email: "", role: "" });
   const [openProject, setOpenProject] = useState(null);
   const [taskForm, setTaskForm] = useState(initialProjectTask);
   const [showTaskScheduling, setShowTaskScheduling] = useState(false);
@@ -103,15 +106,9 @@ export default function ProjectsTab() {
   const [replyTarget, setReplyTarget] = useState(null);
   const userId = dashboardData?.user?.id;
 
-  const headedProjects = useMemo(
-    () => projects.filter((project) => project.owner?._id === userId),
-    [projects, userId]
-  );
-
   const acceptedMembers = (openProject?.project?.members || []).filter((member) => member.status === "accepted");
   const pendingMembers = (openProject?.project?.members || []).filter((member) => member.status === "pending");
   const isProjectHead = openProject ? openProject.project.owner?._id === userId : false;
-  const selectedTask = (openProject?.tasks || []).find((task) => task._id === selectedTaskId);
   const threadedComments = useMemo(() => buildCommentThreads(comments), [comments]);
 
   const fetchProjects = useCallback(async () => {
@@ -126,27 +123,28 @@ export default function ProjectsTab() {
     }
   }, [showToast]);
 
-  const fetchProjectDetails = async (projectId) => {
-    try {
-      const { data } = await api.get(`/projects/${projectId}`);
-      setOpenProject(data.data);
-      return data.data;
-    } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to load project workspace");
-      return null;
-    }
-  };
-
-  const fetchComments = async (taskId) => {
-    if (!taskId) {
+  const fetchProjectComments = async (projectId) => {
+    if (!projectId) {
       setComments([]);
       return;
     }
     try {
-      const { data } = await api.get(`/tasks/${taskId}/comments`);
+      const { data } = await api.get(`/projects/${projectId}/comments`);
       setComments(data.data || []);
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to load comments");
+      showToast(err?.response?.data?.message || "Failed to load project comments");
+    }
+  };
+
+  const fetchProjectDetails = async (projectId) => {
+    try {
+      const { data } = await api.get(`/projects/${projectId}`);
+      setOpenProject(data.data);
+      await fetchProjectComments(projectId);
+      return data.data;
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to load project workspace");
+      return null;
     }
   };
 
@@ -206,6 +204,9 @@ export default function ProjectsTab() {
       setShowProjectModal(false);
       setProjectForm(initialProject);
       await fetchProjects();
+      if (openProject?.project?._id) {
+        await fetchProjectDetails(openProject.project._id);
+      }
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to save project");
     }
@@ -216,7 +217,7 @@ export default function ProjectsTab() {
     try {
       await api.post("/projects/invite", invite);
       showToast("Invitation email sent");
-      setInvite({ projectId: "", email: "", role: "member" });
+      setInvite({ projectId: "", email: "", role: "" });
       await fetchProjects();
       if (openProject?.project?._id === invite.projectId) {
         await fetchProjectDetails(invite.projectId);
@@ -240,31 +241,19 @@ export default function ProjectsTab() {
     }
   };
 
-  const archiveProject = async (projectId) => {
-    try {
-      await api.patch(`/projects/${projectId}/archive`);
-      showToast("Project archived");
-      await fetchProjects();
-      if (openProject?.project?._id === projectId) {
-        await fetchProjectDetails(projectId);
-      }
-    } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to archive project");
-    }
-  };
-
   const beginTaskEdit = (task) => {
     setEditingTaskId(task._id);
     setTaskForm({
       title: task.title || "",
       description: task.description || "",
-      category: task.category || "Work",
-      priority: task.priority || "medium",
-      status: task.status || "todo",
+      category: task.category || "",
+      priority: task.priority || "",
+      status: task.status || "",
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
       scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
       estimatedDuration: task.estimatedDuration ?? "",
       assignedTo: task.assignedTo || "",
+      subtasks: (task.subtasks || []).map(s => ({ title: s.title, completed: s.completed })),
     });
     setShowTaskScheduling(Boolean(task.scheduledDate));
   };
@@ -272,6 +261,11 @@ export default function ProjectsTab() {
   const saveProjectTask = async (e) => {
     e.preventDefault();
     if (!openProject?.project?._id) return;
+    if (!taskForm.category) return showToast("Select a category.");
+    if (!taskForm.priority) return showToast("Select a priority level.");
+    if (!taskForm.status) return showToast("Select a status.");
+    if (!taskForm.assignedTo) return showToast("Assign member is required.");
+
     try {
       const payload = {
         ...taskForm,
@@ -282,15 +276,9 @@ export default function ProjectsTab() {
       };
       if (editingTaskId) {
         await api.put(`/tasks/${editingTaskId}`, payload);
-        if (taskForm.assignedTo) {
-          await api.patch(`/tasks/${editingTaskId}/assign`, { assigneeId: taskForm.assignedTo });
-        }
         showToast("Project task updated");
       } else {
-        const { data } = await api.post("/tasks", payload);
-        if (taskForm.assignedTo) {
-          await api.patch(`/tasks/${data.data._id}/assign`, { assigneeId: taskForm.assignedTo });
-        }
+        await api.post("/tasks", payload);
         showToast("Project task created");
       }
       resetTaskComposer();
@@ -308,7 +296,6 @@ export default function ProjectsTab() {
       showToast("Task deleted");
       if (selectedTaskId === taskId) {
         setSelectedTaskId("");
-        setComments([]);
       }
       await fetchProjectDetails(openProject.project._id);
       await fetchProjects();
@@ -323,11 +310,17 @@ export default function ProjectsTab() {
       showToast("Task marked complete");
       await fetchProjectDetails(openProject.project._id);
       await fetchProjects();
-      if (selectedTaskId === taskId) {
-        await fetchComments(taskId);
-      }
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to update task status");
+    }
+  };
+
+  const handleSubtaskToggle = async (taskId, subtaskId) => {
+    try {
+      await api.patch(`/tasks/${taskId}/subtasks`, { subtaskId });
+      await fetchProjectDetails(openProject.project._id);
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to update subtask");
     }
   };
 
@@ -341,7 +334,7 @@ export default function ProjectsTab() {
       });
       setCommentMessage("");
       setReplyTarget(null);
-      await fetchComments(selectedTaskId);
+      await fetchProjectComments(openProject.project._id);
       showToast("Comment added");
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to add comment");
@@ -355,66 +348,49 @@ export default function ProjectsTab() {
           <div>
             <h2 className="text-xl font-semibold text-[#082F38]">Projects Workspace</h2>
             <p className="text-sm text-[#5B9EA8] mt-1">
-              Keep cards compact here, then open a project for full collaboration, ownership controls, and discussion.
+              Select any project from the list below to view its details, manage members, collaborate, or view project tasks.
             </p>
           </div>
           <button className="btn btn-primary" onClick={openCreateProject}>Create Project</button>
         </div>
       </section>
 
-      <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Project List View (compact and clean) */}
+      <section className="space-y-3">
         {loading ? (
           <div className="card p-6 text-[#5B9EA8]">Loading projects...</div>
         ) : projects.length === 0 ? (
-          <div className="card p-6 text-[#5B9EA8]">No projects yet. Create your first project.</div>
+          <div className="card p-6 text-center text-[#5B9EA8]">No projects yet. Create your first project.</div>
         ) : (
           projects.map((project) => {
-            const headName = project.owner?.fullName || "Project Head";
-            const isHeadProject = project.owner?._id === userId;
             return (
-              <div key={project._id} className="card p-5" style={{ borderColor: `${project.color}55` }}>
-                <div className="h-1.5 rounded-full mb-4" style={{ background: project.color }} />
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-lg font-semibold" style={{ color: project.color }}>{project.title}</h3>
-                    <p className="text-sm text-[#5B9EA8] mt-1 line-clamp-3">{project.description || "No description"}</p>
-                  </div>
-                  <div className="text-sm text-[#5B9EA8]">
-                    <p>Head: <span className="font-medium text-[#082F38]">{headName}</span></p>
-                  </div>
+              <div
+                key={project._id}
+                onClick={() => fetchProjectDetails(project._id)}
+                className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:shadow-md transition-shadow"
+                style={{
+                  borderLeft: `5px solid ${project.color}`,
+                }}
+              >
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-semibold text-[#082F38] hover:text-[#0E7490] transition-colors">{project.title}</h3>
+                  <p className="text-sm text-[#5B9EA8] mt-1 line-clamp-1">{project.description || "No description"}</p>
                 </div>
-                <div className="equal-split-row compact mt-5" style={{ "--split-count": isHeadProject ? 4 : 1 }}>
-                  <button className="btn btn-secondary !text-xs" onClick={() => fetchProjectDetails(project._id)}>Open</button>
-                  {isHeadProject && <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(project)}>Edit</button>}
-                  {isHeadProject && <button className="btn btn-secondary !text-xs" onClick={() => archiveProject(project._id)}>Archive</button>}
-                  {isHeadProject && <button className="btn btn-accent !text-xs" onClick={() => deleteProject(project._id)}>Delete</button>}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="w-32 bg-[#E2F4F6] rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="h-2.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${project.progress || 0}%`,
+                        background: project.color
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-[#082F38] w-12 text-right">{project.progress || 0}%</span>
                 </div>
               </div>
             );
           })
-        )}
-      </section>
-
-      <section className="card p-6">
-        <h3 className="text-lg font-semibold text-[#082F38]">Invite Member</h3>
-        {headedProjects.length === 0 ? (
-          <p className="text-sm text-[#5B9EA8] mt-3">Create a project as head first, then invite collaborators by email.</p>
-        ) : (
-          <form onSubmit={sendInvite} className="equal-split-row relaxed mt-3" style={{ "--split-count": 4 }}>
-            <select className="form-select" value={invite.projectId} onChange={(e) => setInvite((prev) => ({ ...prev, projectId: e.target.value }))} required>
-              <option value="">Select Project</option>
-              {headedProjects.map((project) => (
-                <option key={project._id} value={project._id}>{project.title}</option>
-              ))}
-            </select>
-            <input className="form-input" type="email" placeholder="Collaborator email" value={invite.email} onChange={(e) => setInvite((prev) => ({ ...prev, email: e.target.value }))} required />
-            <select className="form-select" value={invite.role} onChange={(e) => setInvite((prev) => ({ ...prev, role: e.target.value }))}>
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-              <option value="viewer">Viewer</option>
-            </select>
-            <button className="btn btn-primary" type="submit">Send Invite</button>
-          </form>
         )}
       </section>
 
@@ -427,16 +403,16 @@ export default function ProjectsTab() {
               <textarea className="form-textarea w-full" rows={4} placeholder="Project description" value={projectForm.description} onChange={(e) => setProjectForm((prev) => ({ ...prev, description: e.target.value }))} />
               <div className="equal-split-row relaxed" style={{ "--split-count": 3 }}>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Project Color</p>
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Project Color</p>
                   <input type="color" className="form-input h-[44px]" value={projectForm.color} onChange={(e) => setProjectForm((prev) => ({ ...prev, color: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Start Date</p>
-                  <input type="date" className="form-input" value={projectForm.startDate} onChange={(e) => setProjectForm((prev) => ({ ...prev, startDate: e.target.value }))} />
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Start Date</p>
+                  <input type="date" className="form-input" value={projectForm.startDate} onChange={(e) => setProjectForm((prev) => ({ ...prev, startDate: e.target.value }))} required />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Deadline</p>
-                  <input type="date" className="form-input" value={projectForm.targetDate} onChange={(e) => setProjectForm((prev) => ({ ...prev, targetDate: e.target.value }))} />
+                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Deadline</p>
+                  <input type="date" className="form-input" value={projectForm.targetDate} onChange={(e) => setProjectForm((prev) => ({ ...prev, targetDate: e.target.value }))} required />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
@@ -448,74 +424,96 @@ export default function ProjectsTab() {
         </div>
       )}
 
+      {/* Detailed Project Popup/Modal */}
       {openProject && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4 py-6">
           <div className="bg-[var(--surface)] rounded-2xl w-full max-w-7xl max-h-[92vh] overflow-y-auto border border-[var(--line-soft)]">
+            
+            {/* Section 1: Project Information Section */}
             <div className="p-6 border-b" style={{ borderColor: `${openProject.project.color}55` }}>
               <div className="h-1.5 rounded-full mb-5" style={{ background: openProject.project.color }} />
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                <div>
-                  <h3 className="text-2xl font-semibold" style={{ color: openProject.project.color }}>{openProject.project.title}</h3>
-                  <p className="text-sm text-[#5B9EA8] mt-1">{openProject.project.description || "No description"}</p>
-                  <div className="flex flex-wrap gap-3 mt-3 text-xs text-[#5B9EA8]">
-                    <span>Head: {openProject.project.owner?.fullName || "N/A"}</span>
-                    <span>Collaborators: {Math.max(acceptedMembers.length - 1, 0)}</span>
-                    <span>Start: {formatDate(openProject.project.startDate)}</span>
-                    <span>Deadline: {formatDate(openProject.project.targetDate)}</span>
+                <div className="space-y-2 flex-1">
+                  <h3 className="text-2xl font-bold" style={{ color: openProject.project.color }}>{openProject.project.title}</h3>
+                  <p className="text-sm text-[#5B9EA8] whitespace-pre-wrap">{openProject.project.description || "No description"}</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 pt-3 border-t border-dashed border-[#E2F4F6]">
+                    <div>
+                      <span className="block text-xs uppercase tracking-wider text-[#5B9EA8] font-semibold">Start Date</span>
+                      <span className="text-sm font-semibold text-[#082F38]">{formatDate(openProject.project.startDate)}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs uppercase tracking-wider text-[#5B9EA8] font-semibold">Deadline</span>
+                      <span className="text-sm font-semibold text-[#082F38]">{formatDate(openProject.project.targetDate)}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs uppercase tracking-wider text-[#5B9EA8] font-semibold">Progress</span>
+                      <span className="text-sm font-semibold text-[#082F38]">{openProject.project.progress || 0}%</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs uppercase tracking-wider text-[#5B9EA8] font-semibold">Status</span>
+                      <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: openProject.project.color }}>
+                        {openProject.project.status}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs uppercase tracking-wider text-[#5B9EA8] font-semibold">Members</span>
+                      <span className="text-sm font-semibold text-[#082F38]">{acceptedMembers.length}</span>
+                    </div>
                   </div>
                 </div>
-                <button className="btn btn-secondary" onClick={() => setOpenProject(null)}>Close</button>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {isProjectHead && (
+                    <>
+                      <button className="btn btn-secondary !text-xs" onClick={() => openEditProject(openProject.project)}>Edit Project</button>
+                      <button className="btn btn-accent !text-xs" onClick={() => deleteProject(openProject.project._id)}>Delete Project</button>
+                    </>
+                  )}
+                  <button className="btn btn-secondary !text-xs" onClick={() => setOpenProject(null)}>Close</button>
+                </div>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
-                <div className="card p-5">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Status</p>
-                  <p className="text-lg font-semibold mt-2" style={{ color: openProject.project.color }}>{openProject.project.status}</p>
-                </div>
-                <div className="card p-5">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Progress</p>
-                  <p className="text-lg font-semibold text-[#082F38] mt-2">{openProject.project.progress || 0}%</p>
-                </div>
-                <div className="card p-5">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Accepted Members</p>
-                  <p className="text-lg font-semibold text-[#082F38] mt-2">{acceptedMembers.length}</p>
-                </div>
-                <div className="card p-5">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Project Tasks</p>
-                  <p className="text-lg font-semibold text-[#082F38] mt-2">{(openProject.tasks || []).length}</p>
-                </div>
-              </div>
-
-              <div className="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-4">
-                <div className="space-y-4">
+              <div className="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-6">
+                
+                {/* Left Column: Form Panel & All Tasks list */}
+                <div className="space-y-6">
+                  
+                  {/* Section 4: Create Project Task Panel (Visible only to Head) */}
                   {isProjectHead && (
                     <div className="card p-6" style={{ borderColor: `${openProject.project.color}55` }}>
-                      <h4 className="text-lg font-semibold text-[#082F38] mb-4">{editingTaskId ? "Edit Project Task" : "Create Project Task"}</h4>
+                      <h4 className="text-lg font-semibold text-[#082F38] mb-4">
+                        {editingTaskId ? "Edit Project Task" : "Create Project Task Panel"}
+                      </h4>
                       <form onSubmit={saveProjectTask} className="space-y-4">
                         <div className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
                           <input className="form-input w-full" placeholder="Task title" value={taskForm.title} onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))} required />
                           <select className="form-select" value={taskForm.category} onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))} required>
+                            <option value="">Select Category</option>
                             {categories.map((category) => (
                               <option key={category} value={category}>{category}</option>
                             ))}
                           </select>
                         </div>
                         <textarea className="form-textarea w-full" rows={3} placeholder="Task description" value={taskForm.description} onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))} />
+                        
                         <div className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
                           <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
+                            <option value="">Select Priority</option>
                             <option value="low">Low Priority</option>
                             <option value="medium">Medium Priority</option>
                             <option value="high">High Priority</option>
                           </select>
                           <select className="form-select" value={taskForm.status} onChange={(e) => setTaskForm((prev) => ({ ...prev, status: e.target.value }))} required>
+                            <option value="">Select Status</option>
                             <option value="todo">Todo</option>
                             <option value="in_progress">In Progress</option>
                             <option value="completed">Completed</option>
                           </select>
-                          <select className="form-select" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))}>
-                            <option value="">Assign Later</option>
+                          <select className="form-select" value={taskForm.assignedTo} onChange={(e) => setTaskForm((prev) => ({ ...prev, assignedTo: e.target.value }))} required>
+                            <option value="">Select Member</option>
                             {acceptedMembers.map((member) => (
                               <option key={member.user?._id || member.email} value={member.user?._id || ""}>
                                 {member.user?.fullName || member.email}
@@ -523,11 +521,12 @@ export default function ProjectsTab() {
                             ))}
                           </select>
                           <div className="space-y-1">
-                            <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Deadline</p>
-                            <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
+                            <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Deadline</p>
+                            <input type="date" className="form-input" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} required />
                           </div>
                         </div>
 
+                        {/* Optional scheduling card */}
                         <div className="rounded-xl border border-[#E2F4F6] bg-[#F8FCFD] px-4 py-4">
                           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                             <div>
@@ -541,11 +540,11 @@ export default function ProjectsTab() {
                           {showTaskScheduling && (
                             <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 2 }}>
                               <div className="space-y-1">
-                                <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Planning Date</p>
+                                <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Planning Date</p>
                                 <input type="date" className="form-input w-full" value={taskForm.scheduledDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, scheduledDate: e.target.value }))} />
                               </div>
                               <div className="space-y-1">
-                                <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Estimated Hours</p>
+                                <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Estimated Hours</p>
                                 <input
                                   type="number"
                                   min="0"
@@ -559,6 +558,46 @@ export default function ProjectsTab() {
                           )}
                         </div>
 
+                        {/* Subtask composer */}
+                        <div>
+                          <p className="text-sm font-medium text-[#082F38] mb-2 font-semibold">Subtasks</p>
+                          <div className="space-y-2">
+                            {(taskForm.subtasks || []).map((subtask, index) => (
+                              <div key={`sub-${index}`} className="flex gap-2">
+                                <input
+                                  className="form-input w-full"
+                                  value={subtask.title}
+                                  onChange={(e) => {
+                                    const next = [...taskForm.subtasks];
+                                    next[index] = { ...next[index], title: e.target.value };
+                                    setTaskForm((prev) => ({ ...prev, subtasks: next }));
+                                  }}
+                                  placeholder={`Subtask ${index + 1}`}
+                                  required
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => setTaskForm((prev) => ({ ...prev, subtasks: prev.subtasks.filter((_, i) => i !== index) }))}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-ghost mt-2"
+                            onClick={() => {
+                              const subs = taskForm.subtasks || [];
+                              if (subs.length >= 20) return showToast("Maximum 20 subtasks allowed");
+                              setTaskForm((prev) => ({ ...prev, subtasks: [...(prev.subtasks || []), { title: "", completed: false }] }));
+                            }}
+                          >
+                            + Add Subtask
+                          </button>
+                        </div>
+
                         <div className="equal-split-row compact md:ml-auto md:max-w-sm" style={{ "--split-count": editingTaskId ? 2 : 1 }}>
                           {editingTaskId && <button type="button" className="btn btn-secondary" onClick={resetTaskComposer}>Cancel Edit</button>}
                           <button type="submit" className="btn btn-primary">{editingTaskId ? "Save Task" : "Create Task"}</button>
@@ -567,53 +606,109 @@ export default function ProjectsTab() {
                     </div>
                   )}
 
+                  {/* Section 5: All Tasks Panel */}
                   <div className="card p-6" style={{ borderColor: `${openProject.project.color}55` }}>
                     <div className="flex items-center justify-between gap-3 mb-4">
                       <div>
-                        <h4 className="text-lg font-semibold text-[#082F38]">Project Tasks</h4>
-                        <p className="text-sm text-[#5B9EA8] mt-1">Everyone can see all project work, but only the head can fully manage it.</p>
+                        <h4 className="text-lg font-semibold text-[#082F38]">All Tasks Panel</h4>
+                        <p className="text-sm text-[#5B9EA8] mt-1">Everyone can view project work, but permissions are restricted by roles.</p>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {(openProject.tasks || []).length === 0 ? (
                         <p className="text-sm text-[#5B9EA8]">No project tasks yet.</p>
                       ) : (
                         openProject.tasks.map((task) => {
                           const assignee = acceptedMembers.find((member) => member.user?._id === task.assignedTo);
-                          const canCompleteTask = isProjectHead || String(task.assignedTo || "") === String(userId);
+                          const isAssignedMember = String(task.assignedTo || "") === String(userId);
+                          const canCompleteTask = isAssignedMember;
+                          const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+                          const doneSubtasks = hasSubtasks ? task.subtasks.filter(s => s.completed).length : 0;
+                          const subtasksPercent = hasSubtasks ? Math.round((doneSubtasks / task.subtasks.length) * 100) : 0;
+                          const canToggleSubtasks = isProjectHead || isAssignedMember;
+
                           return (
-                            <div key={task._id} className="rounded-xl border p-4 bg-white" style={{ borderColor: `${openProject.project.color}55` }}>
-                              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-                                <div>
+                            <div key={task._id} className="rounded-xl border p-4 bg-white shadow-sm" style={{ borderColor: `${openProject.project.color}33` }}>
+                              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                <div className="min-w-0 flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h5 className="font-semibold text-[#082F38]">{task.title}</h5>
-                                    <span className="text-[11px] uppercase tracking-wide px-2 py-1 rounded-full" style={{ background: `${openProject.project.color}14`, color: openProject.project.color }}>
+                                    <h5 className="font-semibold text-[#082F38] text-base">{task.title}</h5>
+                                    <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full font-semibold" style={{ background: `${openProject.project.color}14`, color: openProject.project.color }}>
                                       {task.category || "General"}
                                     </span>
                                   </div>
-                                  <p className="text-sm text-[#5B9EA8] mt-1">{task.description || "No description"}</p>
-                                  <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                                    <span className="badge badge-status-due-soon">{task.priority}</span>
+                                  <p className="text-sm text-[#5B9EA8] mt-2 whitespace-pre-wrap">{task.description || "No description"}</p>
+                                  
+                                  <div className="flex flex-wrap gap-2 mt-3 text-xs font-semibold text-[#5B9EA8]">
+                                    <span className="badge border px-2 py-0.5 rounded-full" style={{ borderColor: `${openProject.project.color}44`, color: openProject.project.color, background: `${openProject.project.color}14` }}>{task.priority}</span>
                                     <span className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}>
                                       {task.status.replace("_", " ")}
                                     </span>
-                                    <span className="text-[#5B9EA8]">Deadline: {formatDate(task.dueDate)}</span>
-                                    {task.scheduledDate && <span className="text-[#5B9EA8]">Planned: {formatDate(task.scheduledDate)}</span>}
-                                    {task.estimatedDuration && <span className="text-[#5B9EA8]">Est: {task.estimatedDuration}h</span>}
-                                    <span className="text-[#5B9EA8]">Assigned: {assignee?.user?.fullName || "Unassigned"}</span>
+                                    <span>Deadline: {formatDate(task.dueDate)}</span>
+                                    {task.scheduledDate && <span>Planned: {formatDate(task.scheduledDate)}</span>}
+                                    {task.estimatedDuration && <span>Est: {task.estimatedDuration}h</span>}
+                                    <span>Assignee: <span className="text-[#082F38]">{assignee?.user?.fullName || "Unassigned"}</span></span>
                                   </div>
+
+                                  {hasSubtasks && (
+                                    <div className="mt-4 pt-3 border-t border-dashed border-gray-100 space-y-2">
+                                      <div className="flex items-center justify-between text-xs text-[#5B9EA8] mb-1">
+                                        <span>Subtasks Progress:</span>
+                                        <span className="font-semibold text-[#082F38]">
+                                          {doneSubtasks}/{task.subtasks.length} ({subtasksPercent}%)
+                                        </span>
+                                      </div>
+                                      <div className="w-full bg-[#E2F4F6] rounded-full h-1.5 overflow-hidden">
+                                        <div
+                                          className="h-1.5 rounded-full transition-all duration-300"
+                                          style={{
+                                            width: `${subtasksPercent}%`,
+                                            background: openProject.project.color
+                                          }}
+                                        />
+                                      </div>
+                                      
+                                      <div className="space-y-1.5 mt-3">
+                                        {task.subtasks.map((subtask) => (
+                                          <div key={subtask._id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded bg-[#F8FCFD] border border-[#E2F4F6]/50">
+                                            <span className={subtask.completed ? "line-through text-[#5B9EA8]" : "text-[#082F38] font-medium"}>{subtask.title}</span>
+                                            {canToggleSubtasks ? (
+                                              <button
+                                                type="button"
+                                                onClick={() => handleSubtaskToggle(task._id, subtask._id)}
+                                                className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors ${
+                                                  subtask.completed
+                                                    ? "bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]"
+                                                    : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+                                                }`}
+                                              >
+                                                {subtask.completed ? "Completed" : "Mark as Complete"}
+                                              </button>
+                                            ) : (
+                                              <span className={subtask.completed ? "text-[#15803D] font-bold" : "text-[#5B9EA8]"}>
+                                                {subtask.completed ? "Completed" : "Pending"}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
 
-                                <div className="equal-split-row compact w-full lg:w-[360px]" style={{ "--split-count": isProjectHead ? 4 : 2 }}>
+                                <div className="equal-split-row compact w-full lg:w-[320px] shrink-0" style={{
+                                  "--split-count": (isProjectHead ? 3 : 0) + (canCompleteTask && task.status !== "completed" ? 1 : 0) + 1
+                                }}>
                                   {isProjectHead && <button className="btn btn-secondary !text-xs" onClick={() => beginTaskEdit(task)}>Edit</button>}
-                                  {task.status !== "completed" && canCompleteTask && <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>}
+                                  {canCompleteTask && task.status !== "completed" && (
+                                    <button className="btn btn-secondary !text-xs" onClick={() => completeTask(task._id)}>Mark Complete</button>
+                                  )}
                                   <button className="btn btn-secondary !text-xs" onClick={() => {
                                     setSelectedTaskId(task._id);
                                     setReplyTarget(null);
-                                    fetchComments(task._id);
                                   }}>
-                                    Discuss
+                                    Comment
                                   </button>
                                   {isProjectHead && <button className="btn btn-accent !text-xs" onClick={() => deleteTask(task._id)}>Delete</button>}
                                 </div>
@@ -626,83 +721,142 @@ export default function ProjectsTab() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                {/* Right Column: Invite & Members list & Common comments section */}
+                <div className="space-y-6">
+                  
+                  {/* Section 2: Invite Members Section */}
+                  {isProjectHead && (
+                    <div className="card p-6" style={{ borderColor: `${openProject.project.color}55` }}>
+                      <h4 className="text-lg font-semibold text-[#082F38] mb-2">Invite Members Section</h4>
+                      <p className="text-xs text-[#5B9EA8] mb-3">Add collaborators by their email and assign their role.</p>
+                      <form onSubmit={sendInvite} className="flex flex-col gap-3">
+                        <input
+                          type="hidden"
+                          value={invite.projectId = openProject.project._id}
+                        />
+                        <input
+                          className="form-input"
+                          type="email"
+                          placeholder="Collaborator email"
+                          value={invite.email}
+                          onChange={(e) => setInvite((prev) => ({ ...prev, email: e.target.value, projectId: openProject.project._id }))}
+                          required
+                        />
+                        <select
+                          className="form-select"
+                          value={invite.role}
+                          onChange={(e) => setInvite((prev) => ({ ...prev, role: e.target.value }))}
+                          required
+                        >
+                          <option value="">Select Role</option>
+                          <option value="member">Member</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                        <button className="btn btn-primary w-full" type="submit">Invite</button>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Section 3: Members List Section */}
                   <div className="card p-6">
-                    <h4 className="text-lg font-semibold text-[#082F38] mb-4">Collaborators</h4>
-                    <div className="space-y-2">
-                      {acceptedMembers.map((member, index) => (
-                        <div key={`${member.email}-${index}`} className="rounded-lg border border-[#E2E8F0] p-3">
-                          <p className="font-medium text-[#082F38]">{member.user?.fullName || member.email}</p>
-                          <p className="text-xs text-[#5B9EA8]">{member.role === "owner" ? "Head" : "Collaborator"} | accepted</p>
+                    <h4 className="text-lg font-semibold text-[#082F38] mb-4">Members List Section</h4>
+                    <div className="space-y-3">
+                      <div className="rounded-lg border border-[#E2E8F0] p-3 flex items-center justify-between bg-[#F8FCFD]">
+                        <div>
+                          <p className="font-semibold text-[#082F38]">{openProject.project.owner?.fullName || openProject.project.owner?.email}</p>
+                          <p className="text-xs text-[#5B9EA8]">{openProject.project.owner?.email}</p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#0E7490] text-white">
+                          Head
+                        </span>
+                      </div>
+                      
+                      {acceptedMembers.filter(m => m.user?._id !== openProject.project.owner?._id).map((member, index) => (
+                        <div key={`${member.email}-${index}`} className="rounded-lg border border-[#E2E8F0] p-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-[#082F38]">{member.user?.fullName || member.email}</p>
+                            <p className="text-xs text-[#5B9EA8]">{member.email}</p>
+                          </div>
+                          <span className="badge border px-2.5 py-1 rounded-full uppercase text-xs font-semibold" style={{
+                            borderColor: member.role === "viewer" ? "#C4E9ED" : "#FED7AA",
+                            color: member.role === "viewer" ? "#0E7490" : "#C2410C",
+                            background: member.role === "viewer" ? "#E2F4F6" : "#FFF7ED"
+                          }}>
+                            {member.role}
+                          </span>
                         </div>
                       ))}
-                      {pendingMembers.length > 0 && (
-                        <div className="rounded-xl border border-dashed border-[#E2E8F0] p-3 bg-[#F8FCFD]">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-[#5B9EA8] mb-2">Pending Invitations</p>
-                          <div className="space-y-2">
-                            {pendingMembers.map((member, index) => (
-                              <div key={`pending-${member.email}-${index}`} className="text-sm text-[#5B9EA8]">
-                                {member.email} | {member.role}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
 
+                  {/* Section 6: Project Comment Section */}
                   <div className="card p-6">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3 mb-4">
                       <div>
-                        <h4 className="text-lg font-semibold text-[#082F38]">Task Discussion</h4>
-                        <p className="text-sm text-[#5B9EA8] mt-1">Questions, recommendations, updates, and replies stay attached to the relevant task.</p>
+                        <h4 className="text-lg font-semibold text-[#082F38]">Project Comment Section</h4>
+                        <p className="text-sm text-[#5B9EA8] mt-1">Suggestions, queries, discussions, and recommendations for project tasks.</p>
                       </div>
-                      {selectedTask && (
-                        <span className="text-xs px-2 py-1 rounded-full" style={{ background: `${openProject.project.color}14`, color: openProject.project.color }}>
-                          {selectedTask.title}
-                        </span>
-                      )}
                     </div>
 
-                    {!selectedTaskId ? (
-                      <p className="text-sm text-[#5B9EA8] mt-4">Choose a project task to start the conversation.</p>
-                    ) : (
-                      <div className="space-y-4 mt-4">
-                        <div className="max-h-72 overflow-y-auto space-y-3">
-                          {threadedComments.length === 0 ? (
-                            <p className="text-sm text-[#5B9EA8]">No comments yet.</p>
-                          ) : (
-                            threadedComments.map((comment) => (
-                              <CommentThread key={comment._id} comment={comment} onReply={setReplyTarget} />
-                            ))
-                          )}
-                        </div>
+                    <div className="space-y-4">
+                      <div className="max-h-96 overflow-y-auto space-y-3 p-1">
+                        {threadedComments.length === 0 ? (
+                          <p className="text-sm text-[#5B9EA8]">No comments yet.</p>
+                        ) : (
+                          threadedComments.map((comment) => (
+                            <CommentThread key={comment._id} comment={comment} onReply={(tgt) => {
+                              setReplyTarget(tgt);
+                              setSelectedTaskId(tgt.task?._id || tgt.task || "");
+                            }} />
+                          ))
+                        )}
+                      </div>
 
-                        <form onSubmit={submitComment} className="space-y-2">
+                      <form onSubmit={submitComment} className="space-y-3 pt-3 border-t border-[#E2F4F6]">
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Which task the comment belongs to</p>
+                            <select
+                              className="form-select w-full"
+                              value={selectedTaskId}
+                              onChange={(e) => setSelectedTaskId(e.target.value)}
+                              required
+                            >
+                              <option value="">Select Task</option>
+                              {(openProject.tasks || []).map((t) => (
+                                <option key={t._id} value={t._id}>{t.title}</option>
+                              ))}
+                            </select>
+                          </div>
                           {replyTarget && (
-                            <div className="rounded-lg border border-[#E2F4F6] bg-[#F8FCFD] px-3 py-2 text-xs text-[#5B9EA8] flex items-center justify-between gap-2">
+                            <div className="rounded-lg border border-[#E2F4F6] bg-[#F8FCFD] px-3 py-2 text-xs text-[#5B9EA8] flex items-center justify-between gap-2 mt-auto">
                               <span>Replying to {replyTarget.user?.fullName || "User"}</span>
                               <button type="button" className="text-[#0E7490] font-semibold" onClick={() => setReplyTarget(null)}>
                                 Clear
                               </button>
                             </div>
                           )}
-                          <textarea className="form-textarea w-full" rows={3} placeholder="Ask a question or leave a recommendation..." value={commentMessage} onChange={(e) => setCommentMessage(e.target.value)} />
-                          <button className="btn btn-primary" type="submit">Post Comment</button>
-                        </form>
-                      </div>
-                    )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-[#5B9EA8] uppercase tracking-wide font-semibold">Comment content</p>
+                          <textarea className="form-textarea w-full" rows={3} placeholder="Ask a question or leave a recommendation..." value={commentMessage} onChange={(e) => setCommentMessage(e.target.value)} required />
+                        </div>
+                        <button className="btn btn-primary" type="submit">Post Comment</button>
+                      </form>
+                    </div>
                   </div>
 
+                  {/* Workspace Rules card */}
                   <div className="card p-6">
                     <h4 className="text-lg font-semibold text-[#082F38] mb-4">Workspace Rules</h4>
                     <div className="space-y-3 text-sm text-[#5B9EA8]">
-                      <p className="flex items-center gap-2"><FiFolder /> Project heads manage project structure, tasks, and assignments.</p>
-                      <p className="flex items-center gap-2"><FiUsers /> Collaborators can view everything after invite acceptance, join discussion, and complete their own assigned work.</p>
-                      <p className="flex items-center gap-2"><FiMail /> Pending invitees cannot see this workspace until they explicitly accept.</p>
-                      <p className="flex items-center gap-2"><FiMessageSquare /> Discussions stay contextual to the task so collaboration remains traceable.</p>
+                      <p className="flex items-center gap-2"><FiFolder /> Project heads manage project details, tasks, and members.</p>
+                      <p className="flex items-center gap-2"><FiUsers /> Collaborators can view details, comment on tasks, and complete their assigned tasks.</p>
+                      <p className="flex items-center gap-2"><FiMail /> Pending invitees must accept their invite email to join the workspace.</p>
+                      <p className="flex items-center gap-2"><FiMessageSquare /> Conversations are indexed by task for structured collaboration.</p>
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>

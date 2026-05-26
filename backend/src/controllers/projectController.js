@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Project = require("../models/Project");
 const Task = require("../models/Task");
+const Comment = require("../models/Comment");
 const ActivityLog = require("../models/ActivityLog");
 const { createRandomToken, hashToken } = require("../utils/token");
 const { sendEmail } = require("../utils/mailer");
@@ -254,6 +255,29 @@ async function acceptProjectInvite(req, res, next) {
   }
 }
 
+async function getProjectComments(req, res, next) {
+  try {
+    const project = await Project.findOne({ _id: req.params.id, ...projectAccessQuery(req.user._id) });
+    if (!project) {
+      res.status(404);
+      throw new Error("Project not found");
+    }
+    const tasks = await Task.find({ projectId: project._id }).select("_id");
+    const taskIds = tasks.map((t) => t._id);
+    const comments = await Comment.find({ task: { $in: taskIds } })
+      .populate("user", "fullName email avatar")
+      .populate("task", "title")
+      .populate({
+        path: "replyTo",
+        populate: { path: "user", select: "fullName avatar" },
+      })
+      .sort({ createdAt: 1 });
+    res.status(200).json({ success: true, data: comments });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
@@ -265,4 +289,5 @@ module.exports = {
   inviteProjectMember,
   acceptProjectInvite,
   recalcProjectProgress,
+  getProjectComments,
 };

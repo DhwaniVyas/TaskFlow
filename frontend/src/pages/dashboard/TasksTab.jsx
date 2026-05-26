@@ -22,9 +22,9 @@ const initialTaskForm = {
   taskScope: "self",
   title: "",
   description: "",
-  category: "Personal",
-  priority: "medium",
-  status: "todo",
+  category: "",
+  priority: "",
+  status: "",
   dueDate: "",
   scheduledDate: "",
   estimatedDuration: "",
@@ -245,7 +245,13 @@ export default function TasksTab() {
         return showToast("Assign project work to a specific collaborator.");
       }
       if (!taskForm.category) {
-        return showToast("Choose a category so this work can be analyzed later.");
+        return showToast("Select a category.");
+      }
+      if (!taskForm.priority) {
+        return showToast("Select a priority level.");
+      }
+      if (!taskForm.status) {
+        return showToast("Select a status.");
       }
 
       if (editingTask) {
@@ -457,6 +463,19 @@ export default function TasksTab() {
                           )}
                         </div>
                         <p className="text-sm text-[#5B9EA8] mt-2">{task.description || "No description"}</p>
+                        {subtasks.length > 0 && (
+                          <div className="mt-3 flex items-center gap-3">
+                            <div className="flex-1 bg-[#E2F4F6] rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-[#0E7490] h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${(doneSubtasks / subtasks.length) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-[#5B9EA8] font-medium shrink-0">
+                              {Math.round((doneSubtasks / subtasks.length) * 100)}% complete
+                            </span>
+                          </div>
+                        )}
 
                         <div className="equal-split-row compact mt-4" style={{ "--split-count": 5 }}>
                           <span className={`badge ${task.status === "completed" ? "badge-status-done" : task.status === "in_progress" ? "badge-status-in-progress" : "badge-status-todo"}`}>
@@ -537,17 +556,25 @@ export default function TasksTab() {
                         {subtasks.length === 0 ? (
                           <p className="text-xs text-[#5B9EA8]">No subtasks</p>
                         ) : (
-                          subtasks.map((subtask) => (
-                            <label key={subtask._id} className="flex items-center gap-2 text-sm text-[#082F38]">
-                              <input
-                                type="checkbox"
-                                checked={subtask.completed}
-                                disabled={!canToggleSubtasks}
-                                onChange={() => handleSubtaskToggle(task._id, subtask._id)}
-                              />
-                              <span className={subtask.completed ? "line-through text-[#5B9EA8]" : ""}>{subtask.title}</span>
-                            </label>
-                          ))
+                          <div className="space-y-2">
+                            {subtasks.map((subtask) => (
+                              <div key={subtask._id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-white border border-[#E2F4F6]/50">
+                                <span className={`text-sm ${subtask.completed ? "line-through text-[#5B9EA8]" : "text-[#082F38]"}`}>{subtask.title}</span>
+                                <button
+                                  type="button"
+                                  disabled={!canToggleSubtasks}
+                                  onClick={() => handleSubtaskToggle(task._id, subtask._id)}
+                                  className={`px-3 py-1 rounded text-xs font-semibold border transition-colors ${
+                                    subtask.completed
+                                      ? "bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]"
+                                      : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+                                  }`}
+                                >
+                                  {subtask.completed ? "Completed" : "Mark as Complete"}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )}
@@ -624,6 +651,7 @@ export default function TasksTab() {
                   onChange={(e) => setTaskForm((prev) => ({ ...prev, category: e.target.value }))}
                   required
                 >
+                  <option value="">Select Category</option>
                   {categories.map((category) => (
                     <option key={category} value={category}>{category}</option>
                   ))}
@@ -679,11 +707,13 @@ export default function TasksTab() {
 
               <div className="equal-split-row relaxed" style={{ "--split-count": 3 }}>
                 <select className="form-select" value={taskForm.priority} onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))} required>
+                  <option value="">Select Priority</option>
                   <option value="low">Low Priority</option>
                   <option value="medium">Medium Priority</option>
                   <option value="high">High Priority</option>
                 </select>
                 <select className="form-select" value={taskForm.status} onChange={(e) => setTaskForm((prev) => ({ ...prev, status: e.target.value }))} required>
+                  <option value="">Select Status</option>
                   <option value="todo">Todo</option>
                   <option value="in_progress">In Progress</option>
                   <option value="completed">Completed</option>

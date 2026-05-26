@@ -153,13 +153,11 @@ async function getTasks(req, res, next) {
     const limit = Math.min(Math.max(parseInt(req.query.limit || "50", 10), 1), 100);
     const skip = (page - 1) * limit;
 
-    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
-    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const taskAccessQuery = {
       $or: [
         { creator: req.user._id, projectId: null },
         { user: req.user._id, projectId: null },
-        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+        { assignedTo: req.user._id },
       ],
     };
 
@@ -275,13 +273,11 @@ async function searchTasks(req, res, next) {
     const q = String(req.query.q || "").trim();
     if (!q) return res.status(200).json({ success: true, data: [] });
 
-    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
-    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const taskAccessQuery = {
       $or: [
         { creator: req.user._id, projectId: null },
         { user: req.user._id, projectId: null },
-        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+        { assignedTo: req.user._id },
       ],
     };
 
@@ -301,13 +297,11 @@ async function searchTasks(req, res, next) {
 
 async function filterTasks(req, res, next) {
   try {
-    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
-    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const query = {
       $or: [
         { creator: req.user._id, projectId: null },
         { user: req.user._id, projectId: null },
-        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+        { assignedTo: req.user._id },
       ],
     };
     const { status, priority, due, completed } = req.query;
@@ -333,13 +327,11 @@ async function sortTasks(req, res, next) {
     const by = String(req.query.by || "createdAt");
     const order = String(req.query.order || "desc").toLowerCase() === "asc" ? 1 : -1;
 
-    const ownedProjects = await Project.find({ owner: req.user._id }).select("_id");
-    const ownedProjectIds = ownedProjects.map((p) => p._id);
     const taskAccessQuery = {
       $or: [
         { creator: req.user._id, projectId: null },
         { user: req.user._id, projectId: null },
-        { assignedTo: req.user._id, projectId: { $ne: null, $nin: ownedProjectIds } },
+        { assignedTo: req.user._id },
       ],
     };
 

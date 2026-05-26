@@ -39,6 +39,7 @@ const {
   linkTaskToProject,
   inviteProjectMember,
   acceptProjectInvite,
+  getProjectComments,
 } = require("./controllers/projectController");
 const { getAnalytics } = require("./controllers/analyticsController");
 const { assignTask, addComment, getTaskComments } = require("./controllers/teamController");
@@ -164,6 +165,7 @@ app.delete("/api/projects/:id", protect, deleteProject);
 app.patch("/api/projects/:id/link-task", protect, linkTaskToProject);
 app.post("/api/projects/invite", protect, inviteProjectMember);
 app.post("/api/projects/accept-invite", protect, acceptProjectInvite);
+app.get("/api/projects/:id/comments", protect, getProjectComments);
 
 // Analytics
 app.get("/api/analytics", protect, getAnalytics);
