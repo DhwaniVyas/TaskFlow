@@ -232,6 +232,12 @@ async function acceptProjectInvite(req, res, next) {
       throw new Error("Invalid or expired invitation");
     }
 
+    const alreadyMember = project.members.some((m) => m.user && String(m.user) === String(req.user._id) && m.status === "accepted");
+    if (alreadyMember) {
+      res.status(400);
+      throw new Error("You are already an accepted member of this project");
+    }
+
     const member = project.members.find((m) => m.inviteTokenHash === tokenHash && m.status === "pending");
     if (!member || member.email !== req.user.email.toLowerCase().trim()) {
       res.status(403);
@@ -241,6 +247,8 @@ async function acceptProjectInvite(req, res, next) {
     member.status = "accepted";
     member.acceptedAt = new Date();
     member.inviteTokenHash = null;
+
+    project.markModified("members");
     await project.save();
 
     await sendEmail({
@@ -249,7 +257,11 @@ async function acceptProjectInvite(req, res, next) {
       html: `<p>${req.user.fullName} (${req.user.email}) accepted your invite to <b>${project.title}</b>.</p>`,
     });
 
-    res.status(200).json({ success: true, message: "Invitation accepted", data: project });
+    const populated = await Project.findById(project._id)
+      .populate("owner", "fullName email avatar")
+      .populate("members.user", "fullName email avatar");
+
+    res.status(200).json({ success: true, message: "Invitation accepted", data: populated });
   } catch (error) {
     next(error);
   }

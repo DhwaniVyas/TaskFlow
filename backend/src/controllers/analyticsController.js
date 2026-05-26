@@ -27,7 +27,7 @@ async function getAnalytics(req, res, next) {
     const [allTasks, periodTasks, projects] = await Promise.all([
       Task.find(taskAccessQuery),
       Task.find({ ...taskAccessQuery, createdAt: { $gte: start, $lte: end } }),
-      Project.find({ $or: [{ owner: req.user._id }, { "members.user": req.user._id }] }),
+      Project.find({ $or: [{ owner: req.user._id }, { members: { $elemMatch: { user: req.user._id, status: "accepted" } } }] }),
     ]);
 
     const now = new Date();
