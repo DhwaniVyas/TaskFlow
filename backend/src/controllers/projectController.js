@@ -226,7 +226,7 @@ async function acceptProjectInvite(req, res, next) {
       throw new Error("Invitation token is required");
     }
     const tokenHash = hashToken(token);
-    const project = await Project.findOne({ members: { $elemMatch: { inviteTokenHash: tokenHash, status: "pending" } } }).populate("owner", "email fullName");
+    const project = await Project.findOne({ members: { $elemMatch: { inviteTokenHash: tokenHash, status: "pending" } } }).select("+members.inviteTokenHash").populate("owner", "email fullName");
     if (!project) {
       res.status(400);
       throw new Error("Invalid or expired invitation");
