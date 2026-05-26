@@ -8,9 +8,27 @@ const columns = [
   { key: "completed", title: "Completed" },
 ];
 
+function formatDeadline(dateString) {
+  if (!dateString) return "No deadline";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "No deadline";
+  
+  const day = d.getDate();
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  
+  return `${day} ${month} ${year} — ${hours}:${minutes} ${ampm}`;
+}
+
 function dueText(task) {
-  if (!task.dueDate) return "No deadline";
-  return new Date(task.dueDate).toLocaleDateString();
+  return formatDeadline(task.dueDate);
 }
 
 export default function BoardTab({ tasks = [], loading = false, onRefresh, onEditTask, showToast }) {
@@ -52,26 +70,26 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
     }
   };
 
-  if (loading) return <div className="card p-6 text-[#5B9EA8]">Loading board...</div>;
+  if (loading) return <div className="card p-6 text-[var(--text-muted)] border border-[var(--line-soft)]">Loading board...</div>;
 
   return (
     <div className="space-y-4">
-      <section className="card p-6">
-        <h2 className="text-xl font-semibold text-[#082F38]">Kanban Board</h2>
-        <p className="text-sm text-[#5B9EA8] mt-1">Drag tasks between columns to update workflow status.</p>
+      <section className="card p-6 border border-[var(--line-soft)]">
+        <h2 className="text-xl font-semibold text-[var(--text-primary)]">Kanban Board</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Drag tasks between columns to update workflow status.</p>
       </section>
 
       <section className="grid md:grid-cols-3 gap-4">
         {columns.map((column) => (
           <div
             key={column.key}
-            className="card p-4 min-h-[460px] bg-[#F8FCFD]"
+            className="card p-4 min-h-[460px] bg-[var(--surface-subtle)] border border-[var(--line-soft)]"
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(column.key)}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#082F38]">{column.title}</h3>
-              <span className="text-xs text-[#5B9EA8]">
+            <div className="flex items-center justify-between mb-3 border-b border-[var(--line-soft)] pb-2">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">{column.title}</h3>
+              <span className="text-xs text-[var(--text-muted)]">
                 {grouped[column.key].length} tasks | {completionPercent(column.key)}%
               </span>
             </div>
@@ -88,14 +106,14 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
                     key={task._id}
                     draggable
                     onDragStart={() => setDragTaskId(task._id)}
-                    className="bg-white border rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-sm"
+                    className="bg-[var(--surface)] border rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-sm"
                     style={{ 
-                      borderColor: isProjectTask ? `${projectColor}40` : "#C4E9ED99",
-                      borderLeft: isProjectTask ? `4px solid ${projectColor}` : "4px solid #C4E9ED"
+                      borderColor: isProjectTask ? `${projectColor}40` : "var(--line-soft)",
+                      borderLeft: isProjectTask ? `4px solid ${projectColor}` : "4px solid var(--brand-primary)"
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-[#082F38]">{task.title}</h4>
+                      <h4 className="text-sm font-semibold text-[var(--text-primary)]">{task.title}</h4>
                       <span
                         className="text-[10px] px-2 py-1 rounded uppercase border"
                         style={{
@@ -107,12 +125,12 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
                         {task.priority}
                       </span>
                     </div>
-                    <p className="text-xs text-[#5B9EA8] mt-1">{task.description || "No description"}</p>
-                    <div className="text-xs text-[#5B9EA8] mt-2 flex items-center gap-1">
+                    <p className="text-xs text-[var(--text-muted)] mt-1">{task.description || "No description"}</p>
+                    <div className="text-xs text-[var(--text-muted)] mt-2 flex items-center gap-1">
                       <FiClock /> {dueText(task)}
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2">
-                      <div className="text-xs text-[#5B9EA8]">Subtasks: {done}/{subtasks.length}</div>
+                      <div className="text-xs text-[var(--text-muted)] font-medium">Subtasks: {done}/{subtasks.length}</div>
                       {isProjectTask && (
                         <span
                           className="text-[10px] px-2 py-1 rounded uppercase tracking-wide font-semibold"
@@ -135,7 +153,7 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
               })}
 
               {grouped[column.key].length === 0 && (
-                <div className="border border-dashed border-[#C4E9ED] rounded-lg p-4 text-xs text-[#5B9EA8] text-center">
+                <div className="border border-dashed border-[var(--line-soft)] rounded-lg p-4 text-xs text-[var(--text-muted)] text-center">
                   Drop tasks here
                 </div>
               )}

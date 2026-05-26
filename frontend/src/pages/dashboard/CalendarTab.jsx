@@ -4,6 +4,25 @@ import api from "../../api/client";
 const views = ["month", "week", "day", "agenda"];
 const weekdayHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function formatDeadline(dateString) {
+  if (!dateString) return "No deadline";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "No deadline";
+  
+  const day = d.getDate();
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  
+  return `${day} ${month} ${year} — ${hours}:${minutes} ${ampm}`;
+}
+
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -92,15 +111,15 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
   const monthLabel = cursor.toLocaleString(undefined, { month: "long", year: "numeric" });
   const weekLabel = `${weekGrid[0].toLocaleDateString()} - ${weekGrid[6].toLocaleDateString()}`;
 
-  if (loading) return <div className="card p-6 text-[#5B9EA8]">Loading calendar...</div>;
+  if (loading) return <div className="card p-6 text-[var(--text-muted)]">Loading calendar...</div>;
 
   return (
     <div className="space-y-4">
       <section className="card p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-[#082F38]">Calendar & Scheduling</h2>
-            <p className="text-sm text-[#5B9EA8] mt-1">Date-first view of your personal and assigned work.</p>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">Calendar & Scheduling</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-1">Date-first view of your personal and assigned work.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {views.map((item) => (
@@ -139,7 +158,7 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
           >
             Next
           </button>
-          <span className="text-sm font-medium text-[#082F38] ml-1">{view === "week" ? weekLabel : monthLabel}</span>
+          <span className="text-sm font-medium text-[var(--text-primary)] ml-1">{view === "week" ? weekLabel : monthLabel}</span>
           <input type="date" className="form-input !text-xs !py-1 !px-2 ml-auto" onChange={(e) => e.target.value && setCursor(new Date(e.target.value))} />
         </div>
       </section>
@@ -149,7 +168,7 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
           {view !== "day" && (
             <div className="grid grid-cols-7 gap-2 mb-2">
               {weekdayHeaders.map((day) => (
-                <div key={day} className="text-xs font-semibold text-[#5B9EA8] text-center">{day}</div>
+                <div key={day} className="text-xs font-semibold text-[var(--text-muted)] text-center">{day}</div>
               ))}
             </div>
           )}
@@ -161,11 +180,11 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
               return (
                 <div
                   key={day.toISOString()}
-                  className={`border rounded-lg p-2 min-h-[120px] ${isCurrentMonth ? "bg-white border-[#E2F4F6]" : "bg-[#F8FCFD] border-[#EEF7F9]"}`}
+                  className={`border rounded-lg p-2 min-h-[120px] ${isCurrentMonth ? "bg-[var(--surface)] border-[var(--line-soft)]" : "bg-[var(--surface-subtle)] border-[var(--line-soft)] opacity-60"}`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => dragTaskId && updateScheduledDate(dragTaskId, day)}
                 >
-                  <p className={`text-xs font-semibold ${isCurrentMonth ? "text-[#082F38]" : "text-[#9DB7BD]"}`}>
+                  <p className={`text-xs font-semibold ${isCurrentMonth ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
                     {day.toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
                   </p>
                   <div className="space-y-1 mt-2">
@@ -178,15 +197,15 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                           draggable
                           onDragStart={() => setDragTaskId(task._id)}
                           onClick={() => onEditTask?.(task)}
-                          className="w-full text-left text-[11px] p-1.5 rounded cursor-pointer transition-all hover:brightness-95"
+                          className="w-full text-left text-[11px] p-1.5 rounded cursor-pointer transition-all hover:opacity-90"
                           style={{
-                            background: isProjectTask ? `${projectColor}15` : "#F0F9FA",
-                            border: `1px solid ${isProjectTask ? `${projectColor}30` : "#C4E9ED"}`,
-                            borderLeft: `3px solid ${isProjectTask ? projectColor : "#0E7490"}`
+                            background: isProjectTask ? `${projectColor}15` : "var(--surface-subtle)",
+                            border: `1px solid ${isProjectTask ? `${projectColor}30` : "var(--line-soft)"}`,
+                            borderLeft: `3px solid ${isProjectTask ? projectColor : "var(--brand-primary)"}`
                           }}
                         >
-                          <p className="font-semibold text-[#082F38] truncate">{task.title}</p>
-                          <p className="text-[9px] mt-0.5" style={{ color: isProjectTask ? projectColor : "#5B9EA8" }}>{dueBadge(task)}</p>
+                          <p className="font-semibold text-[var(--text-primary)] truncate">{task.title}</p>
+                          <p className="text-[9px] mt-0.5" style={{ color: isProjectTask ? projectColor : "var(--text-muted)" }}>{dueBadge(task)}</p>
                         </button>
                       );
                     })}
@@ -200,28 +219,29 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
 
       {view === "agenda" && (
         <section className="card p-6">
-          <h3 className="text-lg font-semibold text-[#082F38]">Agenda</h3>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Agenda</h3>
           {filteredAgenda.length === 0 ? (
-            <p className="text-[#5B9EA8] mt-3">No scheduled or deadline-based tasks.</p>
+            <p className="text-[var(--text-muted)] mt-3">No scheduled or deadline-based tasks.</p>
           ) : (
             <div className="mt-4 space-y-2">
               {filteredAgenda.map((task) => {
-                const when = new Date(task.scheduledDate || task.dueDate);
                 const projectColor = task.projectColor || "#0E7490";
                 const isProjectTask = Boolean(task.projectId);
                 return (
                   <button
                     key={task._id}
                     onClick={() => onEditTask?.(task)}
-                    className="w-full text-left border rounded-lg p-3 transition-all hover:shadow-sm"
+                    className="w-full text-left border rounded-lg p-3 transition-all hover:shadow-sm bg-[var(--surface)] text-[var(--text-primary)]"
                     style={{ 
-                      borderColor: isProjectTask ? `${projectColor}30` : "#E2F4F6",
-                      borderLeft: `4px solid ${isProjectTask ? projectColor : "#C4E9ED"}`
+                      borderColor: isProjectTask ? `${projectColor}30` : "var(--line-soft)",
+                      borderLeft: `4px solid ${isProjectTask ? projectColor : "var(--brand-primary)"}`
                     }}
                   >
-                    <p className="font-medium text-[#082F38]">{task.title}</p>
-                    <p className="text-xs text-[#5B9EA8]">
-                      {when.toLocaleString()} | {dueBadge(task)} | {task.status.replace("_", " ")}
+                    <p className="font-medium text-[var(--text-primary)]">{task.title}</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {task.scheduledDate 
+                        ? `Scheduled: ${new Date(task.scheduledDate).toLocaleDateString()}` 
+                        : `Deadline: ${formatDeadline(task.dueDate)}`} | {dueBadge(task)} | {task.status.replace("_", " ")}
                     </p>
                   </button>
                 );

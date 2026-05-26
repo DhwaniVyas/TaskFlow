@@ -35,6 +35,37 @@ const initialTaskForm = {
 
 const categories = ["Work", "Study", "Personal", "Meeting", "Development", "Design", "Operations"];
 
+function formatDateTimeLocal(dateString) {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function formatDeadline(dateString) {
+  if (!dateString) return "No deadline";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "No deadline";
+  
+  const day = d.getDate();
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  
+  return `${day} ${month} ${year} — ${hours}:${minutes} ${ampm}`;
+}
+
 function getDueLabel(dueDate, status) {
   if (!dueDate) return "No deadline";
   const now = new Date();
@@ -93,7 +124,7 @@ export default function TasksTab() {
 
   const selectedOwnedProject = ownedProjects.find((project) => project._id === taskForm.projectId);
   const projectMembers = (selectedOwnedProject?.members || []).filter(
-    (member) => member.status === "accepted" && member.user?._id
+    (member) => member.status === "accepted" && member.user?._id && member.role !== "viewer"
   );
 
   useEffect(() => {
@@ -101,6 +132,25 @@ export default function TasksTab() {
       setSearchParams({ view: "list" });
     }
   }, [currentView, setSearchParams]);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      (async () => {
+        try {
+          setTaskState((prev) => ({ ...prev, tasksLoading: true }));
+          const response = await api.get("/tasks/search", { params: { q: debouncedSearch } });
+          setTaskState((prev) => ({
+            ...prev,
+            tasks: (response.data.data || []).map((task) => enrichTask(task, projectMap)),
+          }));
+        } catch (err) {
+          showToast(err?.response?.data?.message || "Failed to search tasks");
+        } finally {
+          setTaskState((prev) => ({ ...prev, tasksLoading: false }));
+        }
+      })();
+    }
+  }, [debouncedSearch, projectMap, setTaskState, showToast]);
 
   useEffect(() => {
     (async () => {
@@ -210,7 +260,7 @@ export default function TasksTab() {
       category: task.category || "Personal",
       priority: task.priority || "medium",
       status: task.status || "todo",
-      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
+      dueDate: task.dueDate ? formatDateTimeLocal(task.dueDate) : "",
       scheduledDate: task.scheduledDate ? new Date(task.scheduledDate).toISOString().slice(0, 10) : "",
       estimatedDuration: task.estimatedDuration ?? "",
       projectId: task.projectId || "",
@@ -414,13 +464,13 @@ export default function TasksTab() {
       </section>
 
       {currentView === "list" && (
-        <section className="card p-6">
-          <h3 className="text-xl font-semibold text-[#082F38] mb-4">Task List</h3>
+        <section className="card p-6 border border-[var(--line-soft)]">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Task List</h3>
           {tasksLoading ? (
-            <p className="text-[#5B9EA8]">Loading tasks...</p>
+            <p className="text-[var(--text-muted)]">Loading tasks...</p>
           ) : tasks.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-[#5B9EA8] mb-3">No tasks found for the selected criteria.</p>
+              <p className="text-[var(--text-muted)] mb-3">No tasks found for the selected criteria.</p>
               <button className="btn btn-secondary" onClick={openCreateModal}>Create your first task</button>
             </div>
           ) : (
@@ -439,16 +489,16 @@ export default function TasksTab() {
                 return (
                   <div
                     key={task._id}
-                    className="rounded-2xl border p-4 bg-white shadow-sm transition-all hover:shadow-md"
+                    className="rounded-2xl border p-4 bg-[var(--surface)] shadow-sm transition-all hover:shadow-md"
                     style={{ 
-                      borderColor: isProjectTask ? `${projectColor}40` : "#C4E9ED80",
-                      borderLeft: isProjectTask ? `5px solid ${projectColor}` : `5px solid #C4E9ED`
+                      borderColor: isProjectTask ? `${projectColor}40` : "var(--line-soft)",
+                      borderLeft: isProjectTask ? `5px solid ${projectColor}` : `5px solid var(--brand-primary)`
                     }}
                   >
                     <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-base font-semibold text-[#082F38]">{task.title}</h4>
+                          <h4 className="text-base font-semibold text-[var(--text-primary)]">{task.title}</h4>
                           {isProjectTask ? (
                             <span
                               className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full"
@@ -457,23 +507,55 @@ export default function TasksTab() {
                               <FiFolder /> {task.projectTitle || "Project Task"}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full bg-[#E2F4F6] text-[#0E7490]">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full bg-[var(--surface-subtle)] text-[var(--brand-primary)] border border-[var(--line-soft)]">
                               <FiUser /> Personal
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-[#5B9EA8] mt-2">{task.description || "No description"}</p>
+                        <p className="text-sm text-[var(--text-muted)] mt-2">{task.description || "No description"}</p>
+                        
                         {subtasks.length > 0 && (
-                          <div className="mt-3 flex items-center gap-3">
-                            <div className="flex-1 bg-[#E2F4F6] rounded-full h-1.5 overflow-hidden">
-                              <div
-                                className="bg-[#0E7490] h-1.5 rounded-full transition-all duration-300"
-                                style={{ width: `${(doneSubtasks / subtasks.length) * 100}%` }}
-                              />
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-[var(--surface-subtle)] rounded-full h-1.5 overflow-hidden border border-[var(--line-soft)]">
+                                <div
+                                  className="h-1.5 rounded-full transition-all duration-300"
+                                  style={{ 
+                                    width: `${(doneSubtasks / subtasks.length) * 100}%`,
+                                    backgroundColor: isProjectTask ? projectColor : "var(--brand-primary)"
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-[var(--text-muted)] font-medium shrink-0">
+                                {doneSubtasks}/{subtasks.length} subtasks ({Math.round((doneSubtasks / subtasks.length) * 100)}%)
+                              </span>
                             </div>
-                            <span className="text-xs text-[#5B9EA8] font-medium shrink-0">
-                              {Math.round((doneSubtasks / subtasks.length) * 100)}% complete
-                            </span>
+                            <div className="space-y-1.5 mt-2 pl-2 border-l-2" style={{ borderColor: isProjectTask ? projectColor : "var(--brand-primary)" }}>
+                              {subtasks.map((subtask) => (
+                                <div key={subtask._id} className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-[var(--surface)] border border-[var(--line-soft)]">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${subtask.completed ? "bg-[#DCFCE7] text-[#15803D]" : "bg-[var(--surface-subtle)] text-[var(--text-muted)]"}`}>
+                                      {subtask.completed ? "Done" : "Todo"}
+                                    </span>
+                                    <span className={`text-xs truncate ${subtask.completed ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
+                                      {subtask.title}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    disabled={!canToggleSubtasks}
+                                    onClick={() => handleSubtaskToggle(task._id, subtask._id)}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all ${
+                                      subtask.completed
+                                        ? "bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]"
+                                        : "bg-[var(--surface)] text-[var(--brand-primary)] border-[var(--line-soft)] hover:bg-[var(--surface-subtle)]"
+                                    }`}
+                                  >
+                                    {subtask.completed ? "Completed" : "Mark Complete"}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
@@ -482,7 +564,7 @@ export default function TasksTab() {
                             {task.status.replace("_", " ")}
                           </span>
                           <span
-                            className="badge border"
+                            className="badge border text-center"
                             style={{
                               color: isProjectTask ? projectColor : "#C2410C",
                               borderColor: isProjectTask ? `${projectColor}44` : "#FED7AA",
@@ -491,44 +573,44 @@ export default function TasksTab() {
                           >
                             {task.priority}
                           </span>
-                          <span className={`text-xs flex items-center gap-1 ${dueLabel === "Overdue" ? "text-[#DC2626] font-semibold" : "text-[#5B9EA8]"}`}>
+                          <span className={`text-xs flex items-center gap-1 ${dueLabel === "Overdue" ? "text-[#DC2626] font-semibold" : "text-[var(--text-muted)]"}`}>
                             <FiClock /> {dueLabel}
                           </span>
-                          <span className="text-xs text-[#5B9EA8]">{task.category || "Uncategorized"}</span>
-                          <span className="text-xs text-[#5B9EA8]">{doneSubtasks}/{subtasks.length} subtasks</span>
+                          <span className="text-xs text-[var(--text-muted)]">{task.category || "Uncategorized"}</span>
+                          <span className="text-xs text-[var(--text-muted)]">{doneSubtasks}/{subtasks.length} subtasks</span>
                         </div>
                       </div>
 
-                      <div className="equal-split-row compact w-full xl:w-[320px]" style={{ "--split-count": 4 }}>
+                      <div className="flex flex-wrap items-center gap-2 xl:justify-end w-full xl:w-auto mt-2 xl:mt-0">
                         {canEditTask ? (
-                          <button className="btn btn-secondary" onClick={() => openEditModal(task)}>
+                          <button className="btn btn-secondary !p-2" onClick={() => openEditModal(task)} title="Edit Task">
                             <FiEdit2 />
                           </button>
                         ) : (
-                          <div className="rounded-lg border border-[#E2F4F6] bg-[#F8FCFD] px-3 py-2 text-xs text-[#5B9EA8] text-center">
+                          <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-2.5 py-1.5 text-xs text-[var(--text-muted)] text-center">
                             View only
                           </div>
                         )}
                         {canEditTask ? (
-                          <button className="btn btn-secondary" onClick={() => setDeleteTarget(task)}>
+                          <button className="btn btn-secondary !p-2" onClick={() => setDeleteTarget(task)} title="Delete Task">
                             <FiTrash2 />
                           </button>
                         ) : (
-                          <div className="rounded-lg border border-[#E2F4F6] bg-[#F8FCFD] px-3 py-2 text-xs text-[#5B9EA8] text-center">
+                          <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-2.5 py-1.5 text-xs text-[var(--text-muted)] text-center">
                             Protected
                           </div>
                         )}
                         {task.status !== "completed" ? (
-                          <button className="btn btn-primary" onClick={() => handleMarkComplete(task)}>
-                            <FiCheckCircle /> Complete
+                          <button className="btn btn-primary px-3 py-1.5 text-xs" onClick={() => handleMarkComplete(task)}>
+                            <FiCheckCircle className="mr-1.5" /> Mark Complete
                           </button>
                         ) : (
-                          <div className="rounded-lg border border-[#DCFCE7] bg-[#F0FDF4] px-3 py-2 text-xs text-[#15803D] text-center font-medium">
+                          <div className="rounded-lg border border-[#DCFCE7] bg-[#F0FDF4] px-3 py-1.5 text-xs text-[#15803D] text-center font-medium">
                             Completed
                           </div>
                         )}
                         <button
-                          className="btn btn-ghost"
+                          className="btn btn-ghost !p-2"
                           onClick={() => setExpandedTaskIds((prev) => ({ ...prev, [task._id]: !prev[task._id] }))}
                         >
                           {expanded ? <FiChevronUp /> : <FiChevronDown />}
@@ -537,45 +619,21 @@ export default function TasksTab() {
                     </div>
 
                     {expanded && (
-                      <div className="mt-4 border-t border-[#E2F4F6] pt-4 space-y-3">
+                      <div className="mt-4 border-t border-[var(--line-soft)] pt-4 space-y-3">
                         <div className="equal-split-row compact" style={{ "--split-count": 3 }}>
-                          <div className="rounded-xl bg-[#F8FCFD] px-4 py-3 text-sm text-[#5B9EA8]">
+                          <div className="rounded-xl bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--text-muted)]">
                             <span className="block text-xs uppercase tracking-wide mb-1">Deadline</span>
-                            {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}
+                            {task.dueDate ? formatDeadline(task.dueDate) : "Not set"}
                           </div>
-                          <div className="rounded-xl bg-[#F8FCFD] px-4 py-3 text-sm text-[#5B9EA8]">
+                          <div className="rounded-xl bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--text-muted)]">
                             <span className="block text-xs uppercase tracking-wide mb-1">Planning Date</span>
                             {task.scheduledDate ? new Date(task.scheduledDate).toLocaleDateString() : "Not scheduled"}
                           </div>
-                          <div className="rounded-xl bg-[#F8FCFD] px-4 py-3 text-sm text-[#5B9EA8]">
+                          <div className="rounded-xl bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--text-muted)]">
                             <span className="block text-xs uppercase tracking-wide mb-1">Estimated Hours</span>
                             {task.estimatedDuration ?? "Not set"}
                           </div>
                         </div>
-
-                        {subtasks.length === 0 ? (
-                          <p className="text-xs text-[#5B9EA8]">No subtasks</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {subtasks.map((subtask) => (
-                              <div key={subtask._id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-white border border-[#E2F4F6]/50">
-                                <span className={`text-sm ${subtask.completed ? "line-through text-[#5B9EA8]" : "text-[#082F38]"}`}>{subtask.title}</span>
-                                <button
-                                  type="button"
-                                  disabled={!canToggleSubtasks}
-                                  onClick={() => handleSubtaskToggle(task._id, subtask._id)}
-                                  className={`px-3 py-1 rounded text-xs font-semibold border transition-colors ${
-                                    subtask.completed
-                                      ? "bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]"
-                                      : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
-                                  }`}
-                                >
-                                  {subtask.completed ? "Completed" : "Mark as Complete"}
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -621,19 +679,19 @@ export default function TasksTab() {
               <div className="grid md:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  className={`rounded-xl border px-4 py-4 text-left transition-colors ${taskForm.taskScope === "self" ? "border-[#0E7490] bg-[#F0F9FA]" : "border-[var(--line-soft)] bg-[var(--surface)]"}`}
+                  className={`rounded-xl border px-4 py-4 text-left transition-colors ${taskForm.taskScope === "self" ? "border-[var(--brand-primary)] bg-[var(--surface-subtle)]" : "border-[var(--line-soft)] bg-[var(--surface)]"}`}
                   onClick={() => setTaskForm((prev) => ({ ...prev, taskScope: "self", projectId: "", assignedTo: "" }))}
                 >
-                  <p className="font-semibold text-[#082F38]">Personal Task</p>
-                  <p className="text-xs text-[#5B9EA8] mt-1">Private, self-managed work that belongs only to your personal workflow.</p>
+                  <p className="font-semibold text-[var(--text-primary)]">Personal Task</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Private, self-managed work that belongs only to your personal workflow.</p>
                 </button>
                 <button
                   type="button"
-                  className={`rounded-xl border px-4 py-4 text-left transition-colors ${taskForm.taskScope === "project" ? "border-[#0E7490] bg-[#F0F9FA]" : "border-[var(--line-soft)] bg-[var(--surface)]"}`}
+                  className={`rounded-xl border px-4 py-4 text-left transition-colors ${taskForm.taskScope === "project" ? "border-[var(--brand-primary)] bg-[var(--surface-subtle)]" : "border-[var(--line-soft)] bg-[var(--surface)]"}`}
                   onClick={() => setTaskForm((prev) => ({ ...prev, taskScope: "project" }))}
                 >
-                  <p className="font-semibold text-[#082F38]">Project Task</p>
-                  <p className="text-xs text-[#5B9EA8] mt-1">Collaborative work linked to one of your projects and assigned to a project member.</p>
+                  <p className="font-semibold text-[var(--text-primary)]">Project Task</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Collaborative work linked to one of your projects and assigned to a project member.</p>
                 </button>
               </div>
 
@@ -669,7 +727,7 @@ export default function TasksTab() {
               {taskForm.taskScope === "project" && (
                 <div className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
                   <div className="space-y-1">
-                    <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Project</p>
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Project</p>
                     <select
                       className="form-select"
                       value={taskForm.projectId}
@@ -687,7 +745,7 @@ export default function TasksTab() {
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Assign To</p>
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Assign To</p>
                     <select
                       className="form-select"
                       value={taskForm.assignedTo}
@@ -719,16 +777,16 @@ export default function TasksTab() {
                   <option value="completed">Completed</option>
                 </select>
                 <div className="space-y-1">
-                  <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Deadline</p>
-                  <input type="date" className="form-input w-full" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Deadline</p>
+                  <input type="datetime-local" className="form-input w-full" value={taskForm.dueDate} onChange={(e) => setTaskForm((prev) => ({ ...prev, dueDate: e.target.value }))} />
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E2F4F6] bg-[#F8FCFD] px-4 py-4">
+              <div className="rounded-xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="font-medium text-[#082F38]">Optional Scheduling & Estimates</p>
-                    <p className="text-xs text-[#5B9EA8] mt-1">Add planned work date or duration details only where necessary.</p>
+                    <p className="font-medium text-[var(--text-primary)]">Optional Scheduling & Estimates</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">Add planned work date or duration details only where necessary.</p>
                   </div>
                   <button type="button" className="btn btn-secondary !text-xs" onClick={() => setShowSchedulingFields((prev) => !prev)}>
                     {showSchedulingFields ? "Hide Optional Scheduling" : "Add Optional Scheduling"}
@@ -738,7 +796,7 @@ export default function TasksTab() {
                 {showSchedulingFields && (
                   <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 2 }}>
                     <div className="space-y-1">
-                      <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Planning Date</p>
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Planning Date</p>
                       <input
                         type="date"
                         className="form-input w-full"
@@ -747,7 +805,7 @@ export default function TasksTab() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <p className="text-xs text-[#5B9EA8] uppercase tracking-wide">Estimated Hours</p>
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Estimated Hours</p>
                       <input
                         type="number"
                         min="0"
@@ -762,7 +820,7 @@ export default function TasksTab() {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-[#082F38] mb-2">Subtasks</p>
+                <p className="text-sm font-medium text-[var(--text-primary)] mb-2 font-semibold">Subtasks</p>
                 <div className="space-y-2">
                   {taskForm.subtasks.map((subtask, index) => (
                     <div key={`sub-${index}`} className="flex gap-2">
@@ -811,7 +869,7 @@ export default function TasksTab() {
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
           <div className="bg-[var(--surface)] rounded-xl w-full max-w-md p-6 border border-[var(--line-soft)]">
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Delete Task</h3>
-            <p className="text-sm text-[#5B9EA8]">Are you sure you want to delete "{deleteTarget.title}"?</p>
+            <p className="text-sm text-[var(--text-muted)]">Are you sure you want to delete "{deleteTarget.title}"?</p>
             <div className="flex justify-end gap-2 mt-5">
               <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
               <button className="btn btn-accent" onClick={handleDeleteTask}>Delete</button>

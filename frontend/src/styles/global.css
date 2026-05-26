@@ -14,15 +14,15 @@
 }
 
 .theme-dark {
-  --brand-primary: #14B8A6;
-  --brand-secondary: #818CF8;
-  --brand-accent: #FB923C;
-  --surface: #111827;
-  --surface-subtle: #1F2937;
-  --app-bg: linear-gradient(180deg, #0B1220 0%, #111827 100%);
-  --line-soft: #374151;
-  --text-primary: #E5E7EB;
-  --text-muted: #9CA3AF;
+  --brand-primary: #22D3EE;      /* Neon Cyan */
+  --brand-secondary: #818CF8;    /* Electric Indigo */
+  --brand-accent: #C084FC;       /* Neon Purple */
+  --surface: #1E293B;            /* Slate Charcoal */
+  --surface-subtle: #334155;     /* Slate Subtle */
+  --app-bg: linear-gradient(180deg, #0F172A 0%, #1E293B 100%); /* Slate gradient */
+  --line-soft: #475569;          /* High contrast border */
+  --text-primary: #F8FAFC;       /* Off-white */
+  --text-muted: #CBD5E1;         /* Bright light gray */
 }
 
 /* --- Reset & Base Elements --- */
@@ -65,7 +65,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-size: 22px;
   font-weight: 500;
-  color: var(--color-mist-900);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -73,7 +73,7 @@ body {
   font-family: 'Poppins', sans-serif;
   font-size: 16px;
   font-weight: 500;
-  color: var(--color-mist-900);
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
@@ -81,7 +81,7 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 400;
-  color: var(--color-mist-900);
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
@@ -89,7 +89,7 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 400;
-  color: #5B9EA8;
+  color: var(--text-muted);
 }
 
 .section-label {
@@ -98,7 +98,7 @@ body {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #5B9EA8;
+  color: var(--text-muted);
 }
 
 /* --- UI Components --- */

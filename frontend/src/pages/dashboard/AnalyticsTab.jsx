@@ -39,8 +39,8 @@ export default function AnalyticsTab() {
       <section className="card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-[#082F38]">Analytics & Productivity</h2>
-            <p className="text-sm text-[#5B9EA8] mt-1">Auto-generated performance insights from your tasks and projects.</p>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">Analytics & Productivity</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-1">Auto-generated performance insights from your tasks and projects.</p>
           </div>
           <select className="form-select w-40" value={range} onChange={(e) => setRange(e.target.value)}>
             {ranges.map((item) => (
@@ -51,7 +51,7 @@ export default function AnalyticsTab() {
       </section>
 
       {loading ? (
-        <section className="card p-6 text-[#5B9EA8]">Loading analytics...</section>
+        <section className="card p-6 text-[var(--text-muted)]">Loading analytics...</section>
       ) : (
         <>
           <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -67,18 +67,18 @@ export default function AnalyticsTab() {
 
           <section className="grid lg:grid-cols-2 gap-4">
             <div className="card p-5">
-              <h3 className="text-base font-semibold text-[#082F38]">Task Completion Mix</h3>
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Task Completion Mix</h3>
               <div className="mt-4 space-y-3">
                 {statusDonut.map((item) => {
                   const width = totalStatus > 0 ? Math.round(((item.value || 0) / totalStatus) * 100) : 0;
                   return (
                     <div key={item.label}>
-                      <div className="flex items-center justify-between text-sm text-[#082F38]">
+                      <div className="flex items-center justify-between text-sm text-[var(--text-primary)]">
                         <span>{item.label}</span>
                         <span>{item.value || 0}</span>
                       </div>
-                      <div className="mt-1 h-2 rounded bg-[#E2F4F6] overflow-hidden">
-                        <div className="h-full bg-[#0E7490]" style={{ width: `${width}%` }} />
+                      <div className="mt-1 h-2 rounded bg-[var(--surface-subtle)] border border-[var(--line-soft)] overflow-hidden">
+                        <div className="h-full bg-[var(--brand-primary)]" style={{ width: `${width}%` }} />
                       </div>
                     </div>
                   );
@@ -86,19 +86,19 @@ export default function AnalyticsTab() {
               </div>
             </div>
             <div className="card p-5">
-              <h3 className="text-base font-semibold text-[#082F38]">Project Progress</h3>
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Project Progress</h3>
               <div className="mt-3 space-y-3">
                 {projectCompletion.length === 0 ? (
-                  <p className="text-sm text-[#5B9EA8]">No project data yet.</p>
+                  <p className="text-sm text-[var(--text-muted)]">No project data yet.</p>
                 ) : (
                   projectCompletion.map((project) => (
                     <div key={project.id}>
-                      <div className="flex items-center justify-between text-sm text-[#082F38]">
+                      <div className="flex items-center justify-between text-sm text-[var(--text-primary)]">
                         <span>{project.title}</span>
                         <span>{project.progress || 0}%</span>
                       </div>
-                      <div className="mt-1 h-2 rounded bg-[#E2F4F6] overflow-hidden">
-                        <div className="h-full bg-[#14B8A6]" style={{ width: `${project.progress || 0}%` }} />
+                      <div className="mt-1 h-2 rounded bg-[var(--surface-subtle)] border border-[var(--line-soft)] overflow-hidden">
+                        <div className="h-full bg-[var(--brand-secondary)]" style={{ width: `${project.progress || 0}%` }} />
                       </div>
                     </div>
                   ))
@@ -108,21 +108,21 @@ export default function AnalyticsTab() {
           </section>
 
           <section className="card p-6">
-            <h3 className="text-base font-semibold text-[#082F38]">Category Distribution</h3>
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">Category Distribution</h3>
             <div className="mt-4 space-y-3">
               {tasksByCategory.length === 0 ? (
-                <p className="text-sm text-[#5B9EA8]">No category data yet.</p>
+                <p className="text-sm text-[var(--text-muted)]">No category data yet.</p>
               ) : (
                 tasksByCategory.map((item) => {
                   const width = totalCategory > 0 ? Math.round(((item.value || 0) / totalCategory) * 100) : 0;
                   return (
                     <div key={item.label}>
-                      <div className="flex items-center justify-between text-sm text-[#082F38]">
+                      <div className="flex items-center justify-between text-sm text-[var(--text-primary)]">
                         <span>{item.label}</span>
                         <span>{item.value || 0}</span>
                       </div>
-                      <div className="mt-1 h-2 rounded bg-[#E2F4F6] overflow-hidden">
-                        <div className="h-full bg-[#F97316]" style={{ width: `${width}%` }} />
+                      <div className="mt-1 h-2 rounded bg-[var(--surface-subtle)] border border-[var(--line-soft)] overflow-hidden">
+                        <div className="h-full bg-[var(--brand-accent)]" style={{ width: `${width}%` }} />
                       </div>
                     </div>
                   );
@@ -132,7 +132,7 @@ export default function AnalyticsTab() {
           </section>
 
           <section className="card p-6">
-            <h3 className="text-base font-semibold text-[#082F38]">Performance Insights</h3>
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">Performance Insights</h3>
             <div className="grid md:grid-cols-3 gap-3 mt-3 text-sm">
               <InsightCard title="Most Productive Day" value={insights.mostProductiveDay || "N/A"} />
               <InsightCard title="Top Category" value={insights.topCategory || "N/A"} />
@@ -151,17 +151,17 @@ export default function AnalyticsTab() {
 function MetricCard({ label, value }) {
   return (
     <div className="card p-5">
-      <p className="text-xs text-[#5B9EA8]">{label}</p>
-      <p className="text-xl font-semibold text-[#082F38] mt-1">{value}</p>
+      <p className="text-xs text-[var(--text-muted)]">{label}</p>
+      <p className="text-xl font-semibold text-[var(--text-primary)] mt-1">{value}</p>
     </div>
   );
 }
 
 function InsightCard({ title, value }) {
   return (
-    <div className="rounded-lg border border-[#E2F4F6] bg-[#F8FCFD] p-4">
-      <p className="text-xs text-[#5B9EA8]">{title}</p>
-      <p className="font-medium text-[#082F38] mt-1">{value}</p>
+    <div className="rounded-lg border border-[var(--line-soft)] bg-[var(--surface-subtle)] p-4">
+      <p className="text-xs text-[var(--text-muted)]">{title}</p>
+      <p className="font-medium text-[var(--text-primary)] mt-1">{value}</p>
     </div>
   );
 }
