@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FiFolder, FiMail, FiMessageSquare, FiUsers, FiClock, FiPlus, FiEdit2, FiTrash2, FiUser, FiCheckCircle } from "react-icons/fi";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { clearToken } from "../../utils/auth";
 import api from "../../api/client";
 import { useDashboardWorkspace } from "./DashboardLayout";
 
@@ -90,6 +91,7 @@ function CommentThread({ comment, level = 0, onReply }) {
 export default function ProjectsTab() {
   const { showToast, dashboardData, refreshDashboard } = useDashboardWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -162,7 +164,14 @@ export default function ProjectsTab() {
         setSearchParams({});
         await Promise.all([fetchProjects(), refreshDashboard()]);
       } catch (err) {
-        showToast(err?.response?.data?.message || "Failed to accept invitation");
+        const msg = err?.response?.data?.message || "";
+        if (msg.includes("Invite does not match this account")) {
+          clearToken();
+          navigate("/login");
+          showToast("This invite is for a different email. Please log in with the correct account.");
+        } else {
+          showToast(msg || "Failed to accept invitation");
+        }
       }
     })();
   }, [fetchProjects, searchParams, setSearchParams, showToast, refreshDashboard]);

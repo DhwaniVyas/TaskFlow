@@ -66,8 +66,15 @@ export default function DashboardLayout() {
             await refreshDashboard();
           } catch (inviteErr) {
             console.error("Auto-accept invite error:", inviteErr);
-            sessionStorage.removeItem("pending_invite_token");
-            showToast(inviteErr?.response?.data?.message || "Failed to accept project invitation");
+            const msg = inviteErr?.response?.data?.message || "";
+            if (msg.includes("Invite does not match this account")) {
+              clearToken();
+              navigate("/login");
+              showToast("This invite is for a different email. Please log in with the correct account.");
+            } else {
+              sessionStorage.removeItem("pending_invite_token");
+              showToast(msg || "Failed to accept project invitation");
+            }
           }
         }
       } catch (err) {
