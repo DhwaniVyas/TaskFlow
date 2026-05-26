@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { FiLogOut } from "react-icons/fi";
 import { googleLogout } from "@react-oauth/google";
@@ -39,16 +39,16 @@ export default function DashboardLayout() {
     tasksLoading: false,
   });
 
-  const showToast = (message) => {
+  const showToast = useCallback((message) => {
     setToast(message);
     setTimeout(() => setToast(""), 2500);
-  };
+  }, []);
 
-  const refreshDashboard = async () => {
+  const refreshDashboard = useCallback(async () => {
     const { data } = await api.get("/dashboard");
     setDashboardData(data.data);
     return data.data;
-  };
+  }, []);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -71,7 +71,12 @@ export default function DashboardLayout() {
           }
         }
       } catch (err) {
-        setError(err?.response?.data?.message || "Failed to load dashboard");
+        if (err?.response?.status === 401 || err?.response?.status === 403) {
+          clearToken();
+          navigate("/login");
+        } else {
+          setError(err?.response?.data?.message || "Failed to load dashboard");
+        }
       } finally {
         setInitialLoading(false);
       }
@@ -113,6 +118,8 @@ export default function DashboardLayout() {
     }
   };
 
+  const openProfileModal = useCallback(() => setShowProfileModal(true), []);
+
   const contextValue = useMemo(
     () => ({
       dashboardData,
@@ -121,9 +128,9 @@ export default function DashboardLayout() {
       showToast,
       taskState,
       setTaskState,
-      openProfileModal: () => setShowProfileModal(true),
+      openProfileModal,
     }),
-    [dashboardData, toast, taskState]
+    [dashboardData, refreshDashboard, toast, showToast, taskState, openProfileModal]
   );
 
   if (initialLoading) {

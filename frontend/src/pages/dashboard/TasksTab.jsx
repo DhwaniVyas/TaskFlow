@@ -172,7 +172,7 @@ export default function TasksTab() {
 
   useEffect(() => {
     if (isListView) fetchTasks();
-  }, [fetchTasks, isListView, projects]);
+  }, [fetchTasks, isListView]);
 
   useEffect(() => {
     if (!isListView) {
@@ -188,7 +188,7 @@ export default function TasksTab() {
         }
       })();
     }
-  }, [applyTasks, isListView, projects, setTaskState, showToast]);
+  }, [applyTasks, isListView, setTaskState, showToast]);
 
   const resetTaskComposer = () => {
     setEditingTask(null);
