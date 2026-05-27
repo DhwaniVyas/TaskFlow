@@ -52,6 +52,7 @@ async function getDashboard(req, res, next) {
           timezone: req.user.timezone,
           themePreference: req.user.themePreference,
           notificationPreferences: req.user.notificationPreferences,
+          phoneNumber: req.user.phoneNumber || "",
           emailVerified: req.user.emailVerified,
           createdAt: req.user.createdAt,
           lastLoginAt: req.user.lastLoginAt,

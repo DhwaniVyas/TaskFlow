@@ -234,6 +234,11 @@ async function inviteProjectMember(req, res, next) {
       res.status(409);
       throw new Error("Member already added");
     }
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (!existingUser) {
+      res.status(404);
+      throw new Error("No account found with this email");
+    }
     const inviteToken = createRandomToken();
     const tokenHash = hashToken(inviteToken);
     project.members = project.members.filter((m) => !(m.email === normalizedEmail && m.status === "pending"));
@@ -296,6 +301,24 @@ async function acceptProjectInvite(req, res, next) {
 
     project.markModified("members");
     await project.save();
+
+    await ActivityLog.create({
+      user: req.user._id,
+      actor: req.user._id,
+      action: `Accepted invitation to project: ${project.title}`,
+      entityType: "project",
+      entityId: project._id,
+      meta: { projectId: project._id },
+    });
+
+    await ActivityLog.create({
+      user: project.owner._id,
+      actor: req.user._id,
+      action: `${req.user.fullName} joined project: ${project.title}`,
+      entityType: "project",
+      entityId: project._id,
+      meta: { projectId: project._id, memberId: req.user._id },
+    });
 
     await triggerNotification({
       userId: project.owner._id,

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/client";
 import { FiRefreshCw, FiMessageSquare } from "react-icons/fi";
+import { useDashboardWorkspace } from "./DashboardLayout";
 
 function formatDate(dateString) {
   if (!dateString) return "";
@@ -40,9 +41,13 @@ function getReadableType(type) {
 }
 
 export default function NotificationsTab() {
+  const { dashboardData, openProfileModal } = useDashboardWorkspace();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All"); // All, Project, Task
+
+  const user = dashboardData?.user || {};
+  const hasPhoneNumber = Boolean(user.phoneNumber && String(user.phoneNumber).trim().length > 0);
 
   const fetchNotifications = async () => {
     try {
@@ -102,6 +107,26 @@ export default function NotificationsTab() {
           </div>
         </div>
       </section>
+
+      {!hasPhoneNumber && (
+        <div className="p-4 rounded-xl border border-[var(--brand-accent)]/30 bg-[var(--brand-accent)]/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 text-left">
+            <span className="text-xl shrink-0">📱</span>
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Enable SMS alerts</p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Add a phone number in Profile Settings to receive SMS notifications for assignments and reminders.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={openProfileModal}
+            className="btn btn-secondary hover:!border-[var(--brand-accent)] !py-1.5 !px-3.5 !text-xs shrink-0 self-stretch sm:self-auto"
+          >
+            Configure SMS
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="card p-6 text-center text-[var(--text-muted)]">Loading notifications...</div>

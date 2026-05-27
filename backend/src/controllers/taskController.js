@@ -3,6 +3,7 @@ const Task = require("../models/Task");
 const Project = require("../models/Project");
 const { recalcProjectProgress } = require("./projectController");
 const { triggerNotification } = require("../utils/notificationService");
+const ActivityLog = require("../models/ActivityLog");
 
 const allowedStatus = ["todo", "in_progress", "completed"];
 const allowedPriority = ["low", "medium", "high"];
@@ -150,6 +151,15 @@ async function createTask(req, res, next) {
       relatedEntity: task._id.toString(),
     });
 
+    await ActivityLog.create({
+      user: req.user._id,
+      actor: req.user._id,
+      action: `Created task: ${task.title}`,
+      entityType: "task",
+      entityId: task._id,
+      meta: { taskId: task._id },
+    });
+
     if (task.assignedTo && String(task.assignedTo) !== String(req.user._id)) {
       await triggerNotification({
         userId: task.assignedTo,
@@ -157,6 +167,18 @@ async function createTask(req, res, next) {
         category: "Task",
         message: `You have been assigned to task '${task.title}'.`,
         relatedEntity: task._id.toString(),
+      });
+
+      const User = require("../models/User");
+      const assigneeUser = await User.findById(task.assignedTo);
+      const assigneeName = assigneeUser ? assigneeUser.fullName : "Collaborator";
+      await ActivityLog.create({
+        user: req.user._id,
+        actor: req.user._id,
+        action: `Assigned task ${task.title} to ${assigneeName}`,
+        entityType: "task",
+        entityId: task._id,
+        meta: { taskId: task._id, assigneeId: task.assignedTo },
       });
     }
 
@@ -260,13 +282,27 @@ async function updateTask(req, res, next) {
     await task.save();
 
     const newAssignee = task.assignedTo ? String(task.assignedTo) : null;
-    if (newAssignee && newAssignee !== oldAssignee && newAssignee !== String(req.user._id)) {
-      await triggerNotification({
-        userId: newAssignee,
-        type: "task_assigned",
-        category: "Task",
-        message: `You have been assigned to task '${task.title}'.`,
-        relatedEntity: task._id.toString(),
+    if (newAssignee && newAssignee !== oldAssignee) {
+      if (newAssignee !== String(req.user._id)) {
+        await triggerNotification({
+          userId: newAssignee,
+          type: "task_assigned",
+          category: "Task",
+          message: `You have been assigned to task '${task.title}'.`,
+          relatedEntity: task._id.toString(),
+        });
+      }
+
+      const User = require("../models/User");
+      const assigneeUser = await User.findById(newAssignee);
+      const assigneeName = assigneeUser ? assigneeUser.fullName : "Collaborator";
+      await ActivityLog.create({
+        user: req.user._id,
+        actor: req.user._id,
+        action: `Assigned task ${task.title} to ${assigneeName}`,
+        entityType: "task",
+        entityId: task._id,
+        meta: { taskId: task._id, assigneeId: task.assignedTo },
       });
     }
 
@@ -278,6 +314,15 @@ async function updateTask(req, res, next) {
         category: "Task",
         message: `Task '${task.title}' has been marked as completed.`,
         relatedEntity: task._id.toString(),
+      });
+
+      await ActivityLog.create({
+        user: req.user._id,
+        actor: req.user._id,
+        action: `Completed task: ${task.title}`,
+        entityType: "task",
+        entityId: task._id,
+        meta: { taskId: task._id },
       });
     }
     if (oldProjectId !== (task.projectId ? String(task.projectId) : null)) {
@@ -452,6 +497,15 @@ async function updateTaskStatus(req, res, next) {
         category: "Task",
         message: `Task '${task.title}' has been marked as completed.`,
         relatedEntity: task._id.toString(),
+      });
+
+      await ActivityLog.create({
+        user: req.user._id,
+        actor: req.user._id,
+        action: `Completed task: ${task.title}`,
+        entityType: "task",
+        entityId: task._id,
+        meta: { taskId: task._id },
       });
     }
 
