@@ -41,7 +41,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu Button */}
-        <button 
+        <button
           onClick={() => setIsOpen(!isOpen)}
           className="md:hidden p-2 text-[#082F38] hover:text-[#0E7490] transition-colors focus:outline-none"
         >
@@ -52,26 +52,26 @@ export default function Navbar() {
       {/* Mobile Dropdown Nav */}
       {isOpen && (
         <div className="absolute top-full left-0 w-full bg-white border-b border-[#C4E9ED]/40 py-6 px-6 flex flex-col gap-4 shadow-lg md:hidden animate-fade-in">
-          <a 
-            href="#features" 
+          <a
+            href="#features"
             onClick={() => setIsOpen(false)}
             className="text-base font-medium text-[#082F38] hover:text-[#0E7490] py-2 border-b border-gray-50"
           >
             Features
           </a>
-          <a 
-            href="#workflow" 
+          <a
+            href="#workflow"
             onClick={() => setIsOpen(false)}
             className="text-base font-medium text-[#082F38] hover:text-[#0E7490] py-2 border-b border-gray-50"
           >
             Workflow
           </a>
-          <a 
-            href="#cta" 
+          <a
+            href="#cta"
             onClick={() => setIsOpen(false)}
             className="text-base font-medium text-[#082F38] hover:text-[#0E7490] py-2 border-b border-gray-50"
           >
-            Pricing
+            Get a start
           </a>
           <div className="flex flex-col gap-3 pt-4">
             <Link to="/login" onClick={() => setIsOpen(false)} className="w-full">
