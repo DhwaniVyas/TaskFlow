@@ -414,20 +414,20 @@ export default function ProjectsTab() {
                 onClick={() => fetchProjectDetails(project._id)}
                 onMouseEnter={() => setHoveredProjectId(project._id)}
                 onMouseLeave={() => setHoveredProjectId(null)}
-                className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer border border-[var(--line-soft)]"
+                className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer border"
                 style={{
                   borderLeft: `5px solid ${project.color}`,
-                  background: `linear-gradient(90deg, ${project.color}08 0%, var(--surface) 100%)`,
-                  borderColor: isHovered ? project.color : undefined,
+                  background: `linear-gradient(90deg, ${project.color}0D 0%, var(--surface) 100%)`,
+                  borderColor: isHovered ? project.color : `color-mix(in srgb, ${project.color} 20%, var(--line-soft))`,
                   boxShadow: isHovered
-                    ? `0 10px 25px -5px ${project.color}2A, 0 8px 10px -6px ${project.color}15`
-                    : undefined,
+                    ? `0 10px 25px -5px ${project.color}35, 0 8px 10px -6px ${project.color}20`
+                    : `0 4px 12px -2px ${project.color}15, 0 1px 3px -1px ${project.color}10`,
                   transform: isHovered ? "translateY(-3px)" : undefined,
                   transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
                 }}
               >
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-semibold text-[var(--text-primary)] hover:text-[var(--brand-primary)] transition-colors">{project.title}</h3>
+                  <h3 className="text-base font-semibold transition-colors hover:filter hover:brightness-110" style={{ color: project.color }}>{project.title}</h3>
                   <p className="text-sm text-[var(--text-muted)] mt-1 line-clamp-1">{project.description || "No description"}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
