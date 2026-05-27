@@ -138,6 +138,7 @@ export default function ProjectsTab() {
   const [commentMessage, setCommentMessage] = useState("");
   const [replyTarget, setReplyTarget] = useState(null);
   const userId = dashboardData?.user?.id;
+  const [hoveredProjectId, setHoveredProjectId] = useState(null);
 
   const acceptedMembers = (openProject?.project?.members || []).filter((member) => member.status === "accepted");
   const pendingMembers = (openProject?.project?.members || []).filter((member) => member.status === "pending");
@@ -406,13 +407,23 @@ export default function ProjectsTab() {
           <div className="card p-6 text-center text-[var(--text-muted)] border border-[var(--line-soft)]">No projects yet. Create your first project.</div>
         ) : (
           projects.map((project) => {
+            const isHovered = hoveredProjectId === project._id;
             return (
               <div
                 key={project._id}
                 onClick={() => fetchProjectDetails(project._id)}
-                className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:shadow-md transition-shadow border border-[var(--line-soft)] bg-[var(--surface)]"
+                onMouseEnter={() => setHoveredProjectId(project._id)}
+                onMouseLeave={() => setHoveredProjectId(null)}
+                className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer border border-[var(--line-soft)]"
                 style={{
                   borderLeft: `5px solid ${project.color}`,
+                  background: `linear-gradient(90deg, ${project.color}08 0%, var(--surface) 100%)`,
+                  borderColor: isHovered ? project.color : undefined,
+                  boxShadow: isHovered
+                    ? `0 10px 25px -5px ${project.color}2A, 0 8px 10px -6px ${project.color}15`
+                    : undefined,
+                  transform: isHovered ? "translateY(-3px)" : undefined,
+                  transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
                 }}
               >
                 <div className="min-w-0 flex-1">

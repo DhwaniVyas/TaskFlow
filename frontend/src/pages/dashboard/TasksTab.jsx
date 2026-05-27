@@ -104,6 +104,7 @@ export default function TasksTab() {
   const [showSchedulingFields, setShowSchedulingFields] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState(taskState.search || "");
   const userId = dashboardData?.user?.id;
+  const [hoveredTaskId, setHoveredTaskId] = useState(null);
 
   const projectMap = useMemo(() => {
     const map = new Map();
@@ -486,13 +487,23 @@ export default function TasksTab() {
                 const canEditTask = !isProjectTask || isOwnedProjectTask;
                 const canToggleSubtasks = canEditTask;
 
+                const isHovered = hoveredTaskId === task._id;
+                const activeColor = isProjectTask ? projectColor : "var(--brand-primary)";
                 return (
                   <div
                     key={task._id}
-                    className="rounded-2xl border p-4 bg-[var(--surface)] shadow-sm transition-all hover:shadow-md"
+                    onMouseEnter={() => setHoveredTaskId(task._id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                    className="rounded-2xl border p-4 transition-all"
                     style={{ 
-                      borderColor: isProjectTask ? `${projectColor}40` : "var(--line-soft)",
-                      borderLeft: isProjectTask ? `5px solid ${projectColor}` : `5px solid var(--brand-primary)`
+                      borderColor: isHovered ? activeColor : (isProjectTask ? `${projectColor}40` : "var(--line-soft)"),
+                      borderLeft: `5px solid ${activeColor}`,
+                      background: `linear-gradient(90deg, ${activeColor}08 0%, var(--surface) 100%)`,
+                      boxShadow: isHovered
+                        ? `0 10px 25px -5px ${activeColor}2E, 0 8px 10px -6px ${activeColor}18`
+                        : undefined,
+                      transform: isHovered ? "translateY(-3px)" : undefined,
+                      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
                     }}
                   >
                     <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">

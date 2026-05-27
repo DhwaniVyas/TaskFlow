@@ -2,6 +2,10 @@
 @import "tailwindcss";
 
 @theme {
+  --color-electric-blue: #2563EB;
+  --color-neon-cyan: #06B6D4;
+  --color-neon-purple: #D8B4FE;
+
   --color-mist-50: #F0F9FA;
   --color-mist-100: #E2F4F6;
   --color-mist-200: #C4E9ED;
