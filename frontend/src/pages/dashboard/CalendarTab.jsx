@@ -4,6 +4,19 @@ import api from "../../api/client";
 const views = ["month", "week", "day", "agenda"];
 const weekdayHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const statusColors = {
+  completed: "#1FA37A",
+  in_progress: "#F2A93B",
+  todo: "#6B7A8C",
+  pending: "#6B7A8C",
+  overdue: "#D64545",
+  blocked: "#7A56D6",
+};
+
+const getStatusColor = (status) => {
+  return statusColors[status?.toLowerCase()] || "#6B7A8C";
+};
+
 function formatDeadline(dateString) {
   if (!dateString) return "No deadline";
   const d = new Date(dateString);
@@ -111,7 +124,16 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
   const monthLabel = cursor.toLocaleString(undefined, { month: "long", year: "numeric" });
   const weekLabel = `${weekGrid[0].toLocaleDateString()} - ${weekGrid[6].toLocaleDateString()}`;
 
-  if (loading) return <div className="card p-6 text-[var(--text-muted)]">Loading calendar...</div>;
+  if (loading) {
+    return (
+      <div className="card p-6 border border-[var(--line-soft)]">
+        <div className="loading-spinner-container">
+          <div className="loading-spinner"></div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Loading calendar...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -177,10 +199,23 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
             {(view === "month" ? monthGrid : view === "week" ? weekGrid : [startOfDay(cursor)]).map((day) => {
               const dayEvents = eventsForDay(day);
               const isCurrentMonth = day.getMonth() === cursor.getMonth();
+              const isToday = sameDay(day, new Date());
+              const isSelected = sameDay(day, cursor);
+              let cellClass = "border rounded-lg p-2 min-h-[120px] transition-all ";
+              if (isToday) {
+                cellClass += "ring-2 ring-[var(--brand-secondary)]/50 border-[var(--brand-secondary)] bg-[var(--surface)] shadow-sm"; // Teal glow outline ring
+              } else if (isSelected) {
+                cellClass += "bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 border-[var(--brand-primary)]/50 shadow-sm"; // Selected gradient fill
+              } else if (isCurrentMonth) {
+                cellClass += "bg-[var(--surface)] border-[var(--line-soft)] hover:border-[var(--brand-primary)]/30";
+              } else {
+                cellClass += "bg-[var(--surface-subtle)] border-[var(--line-soft)] opacity-60";
+              }
+
               return (
                 <div
                   key={day.toISOString()}
-                  className={`border rounded-lg p-2 min-h-[120px] ${isCurrentMonth ? "bg-[var(--surface)] border-[var(--line-soft)]" : "bg-[var(--surface-subtle)] border-[var(--line-soft)] opacity-60"}`}
+                  className={cellClass}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => dragTaskId && updateScheduledDate(dragTaskId, day)}
                 >
@@ -189,7 +224,7 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                   </p>
                   <div className="space-y-1 mt-2">
                     {dayEvents.map((task) => {
-                      const projectColor = task.projectColor || "#0E7490";
+                      const projectColor = task.projectColor || "#185FA5";
                       const isProjectTask = Boolean(task.projectId);
                       return (
                         <button
@@ -197,7 +232,7 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                           draggable
                           onDragStart={() => setDragTaskId(task._id)}
                           onClick={() => onEditTask?.(task)}
-                          className="w-full text-left text-[11px] p-1.5 rounded cursor-pointer transition-all hover:opacity-90"
+                          className="w-full text-left text-[11px] p-1.5 rounded cursor-pointer transition-all hover:opacity-90 animate-slide-in"
                           style={{
                             background: isProjectTask ? `${projectColor}15` : "var(--surface-subtle)",
                             border: `1px solid ${isProjectTask ? `${projectColor}30` : "var(--line-soft)"}`,
@@ -205,7 +240,10 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
                           }}
                         >
                           <p className="font-semibold text-[var(--text-primary)] truncate">{task.title}</p>
-                          <p className="text-[9px] mt-0.5" style={{ color: isProjectTask ? projectColor : "var(--text-muted)" }}>{dueBadge(task)}</p>
+                          <p className="text-[9px] mt-0.5 flex items-center gap-1.5" style={{ color: isProjectTask ? projectColor : "var(--text-muted)" }}>
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getStatusColor(task.status) }} />
+                            <span>{dueBadge(task)}</span>
+                          </p>
                         </button>
                       );
                     })}
@@ -225,7 +263,7 @@ export default function CalendarTab({ tasks = [], loading = false, onRefresh, on
           ) : (
             <div className="mt-4 space-y-2">
               {filteredAgenda.map((task) => {
-                const projectColor = task.projectColor || "#0E7490";
+                const projectColor = task.projectColor || "#E35336";
                 const isProjectTask = Boolean(task.projectId);
                 return (
                   <button

@@ -75,10 +75,10 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0F9FA] via-white to-[#FFE4D6]/20 flex flex-col justify-between py-12 px-6">
+    <div className="min-h-screen bg-[var(--app-bg)] flex flex-col justify-between py-12 px-6">
       {/* Back navigation */}
       <div className="max-w-md mx-auto w-full mb-6">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#5B9EA8] hover:text-[#0E7490] transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--brand-accent)] hover:text-[var(--brand-primary)] transition-colors">
           <FiArrowLeft className="text-sm" /> Back to Home
         </Link>
       </div>
@@ -89,15 +89,15 @@ export default function Register() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="card bg-white p-8 md:p-10 border-[#C4E9ED]/50"
+          className="card bg-[var(--surface)] p-8 md:p-10 border-[var(--line-soft)]"
         >
           {/* Logo / Title */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-[#0E7490] to-[#22D3EE] shadow-md mb-3 text-white text-2xl">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--brand-primary)] shadow-md mb-3 text-white text-2xl">
               <FiCheckSquare />
             </div>
-            <h2 className="page-title">Create Account</h2>
-            <p className="text-xs text-[#5B9EA8] mt-1">Get started with a free TaskFlow workspace.</p>
+            <h2 className="page-title text-[var(--text-primary)]">Create Account</h2>
+            <p className="text-xs text-[var(--text-muted)] mt-1">Get started with a free TaskFlow workspace.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,7 +107,7 @@ export default function Register() {
             <div className="form-group">
               <label className="form-label" htmlFor="name">Full Name</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#5B9EA8] pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[var(--text-muted)] pointer-events-none">
                   <FiUser />
                 </span>
                 <input
@@ -126,7 +126,7 @@ export default function Register() {
             <div className="form-group">
               <label className="form-label" htmlFor="email">Email Address</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#5B9EA8] pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[var(--text-muted)] pointer-events-none">
                   <FiMail />
                 </span>
                 <input
@@ -145,7 +145,7 @@ export default function Register() {
             <div className="form-group">
               <label className="form-label" htmlFor="password">Password</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#5B9EA8] pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[var(--text-muted)] pointer-events-none">
                   <FiLock />
                 </span>
                 <input
@@ -159,7 +159,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#5B9EA8] hover:text-[#0E7490] transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
@@ -171,7 +171,7 @@ export default function Register() {
             <div className="form-group">
               <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#5B9EA8] pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[var(--text-muted)] pointer-events-none">
                   <FiLock />
                 </span>
                 <input
@@ -185,7 +185,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#5B9EA8] hover:text-[#0E7490] transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
@@ -201,13 +201,13 @@ export default function Register() {
                   type="checkbox"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="h-4 w-4 mt-0.5 text-[#0E7490] border-[#80CDD6] rounded focus:ring-[#22D3EE] focus:ring-opacity-25"
+                  className="h-4 w-4 mt-0.5 text-[var(--brand-primary)] border-[var(--line-soft)] rounded focus:ring-[var(--brand-primary)] focus:ring-opacity-25"
                 />
-                <label htmlFor="agree-terms" className="ml-2 block text-xs text-[#082F38] leading-tight font-medium cursor-pointer">
+                <label htmlFor="agree-terms" className="ml-2 block text-xs text-[var(--text-primary)] leading-tight font-medium cursor-pointer">
                   I agree to the{' '}
-                  <a href="#" className="text-[#0E7490] hover:text-[#164E63] font-semibold">Terms of Service</a>
+                  <a href="#" className="text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-semibold">Terms of Service</a>
                   {' '}and{' '}
-                  <a href="#" className="text-[#0E7490] hover:text-[#164E63] font-semibold">Privacy Policy</a>.
+                  <a href="#" className="text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-semibold">Privacy Policy</a>.
                 </label>
               </div>
               {errors.agreeTerms && <p className="form-error-msg">{errors.agreeTerms}</p>}
@@ -217,7 +217,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn btn-accent w-full py-3 mt-4 text-sm font-semibold tracking-wide"
+              className="btn btn-primary w-full py-3 mt-4 text-sm font-semibold tracking-wide"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -230,9 +230,9 @@ export default function Register() {
           <div className="mt-8 text-center">
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#C4E9ED]/50"></div>
+                <div className="w-full border-t border-[var(--line-soft)]"></div>
               </div>
-              <div className="relative text-xs text-[#5B9EA8] bg-white px-4 inline-block uppercase tracking-wider font-semibold">
+              <div className="relative text-xs text-[var(--text-muted)] bg-[var(--surface)] px-4 inline-block uppercase tracking-wider font-semibold">
                 Or continue with
               </div>
             </div>
@@ -247,9 +247,9 @@ export default function Register() {
       </div>
 
       {/* Footer link */}
-      <div className="max-w-md mx-auto w-full text-center mt-6 text-xs text-[#5B9EA8]">
+      <div className="max-w-md mx-auto w-full text-center mt-6 text-xs text-[var(--text-muted)]">
         Already have an account?{' '}
-        <Link to="/login" className="text-[#0E7490] hover:text-[#164E63] font-semibold transition-colors">
+        <Link to="/login" className="text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-semibold transition-colors">
           Sign In
         </Link>
       </div>

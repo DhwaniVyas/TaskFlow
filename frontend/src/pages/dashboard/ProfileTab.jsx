@@ -42,7 +42,7 @@ export default function ProfileTab() {
         </div>
       </section>
 
-      <section className="equal-split-row relaxed" style={{ "--split-count": 4 }}>
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <InfoCard label="Name" value={user.fullName || "N/A"} />
         <InfoCard label="Email" value={user.email || "N/A"} />
         <InfoCard label="Provider" value={accountType} />
@@ -53,10 +53,10 @@ export default function ProfileTab() {
         <InfoCard label="Completion %" value={`${overview.completionRate || 0}%`} />
       </section>
 
-      <section className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-[var(--text-primary)]">Profile</h3>
-          <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 2 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <InfoCard label="Bio" value={user.bio || "No bio added"} />
             <InfoCard label="Timezone" value={user.timezone || "Not set"} />
             <InfoCard label="Phone Number" value={user.phoneNumber || "Not added"} />
@@ -67,7 +67,7 @@ export default function ProfileTab() {
 
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-[var(--text-primary)]">Security & Preferences</h3>
-          <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 2 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <InfoCard label="Account Type" value={accountType} />
             <InfoCard label="Email Status" value={user.emailVerified ? "Verified" : "Pending"} />
             <InfoCard label="Project Alerts" value={notifications.project !== false ? "Enabled" : "Disabled"} />

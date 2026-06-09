@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FiCalendar,
   FiCheckCircle,
   FiChevronDown,
   FiChevronUp,
@@ -360,9 +359,9 @@ export default function TasksTab() {
       <section className="card p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-[#5B9EA8]">Workspace</p>
-            <h2 className="text-xl font-semibold text-[#082F38] mt-1">Tasks Workspace</h2>
-            <p className="text-sm text-[#5B9EA8] mt-1">
+            <p className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">Workspace</p>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mt-1">Tasks Workspace</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-1">
               Personal tasks stay private to you. Project tasks appear here only when they are assigned to you.
             </p>
           </div>
@@ -374,7 +373,9 @@ export default function TasksTab() {
         <div className="equal-split-row compact mt-5" style={{ "--split-count": 3, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-              currentView === "list" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+              currentView === "list" 
+                ? "bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm" 
+                : "bg-[var(--surface)] text-[var(--brand-primary)] border-[var(--line-soft)] hover:bg-[var(--surface-subtle)]"
             }`}
             onClick={() => setSearchParams({ view: "list" })}
           >
@@ -382,7 +383,9 @@ export default function TasksTab() {
           </button>
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-              currentView === "board" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+              currentView === "board" 
+                ? "bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm" 
+                : "bg-[var(--surface)] text-[var(--brand-primary)] border-[var(--line-soft)] hover:bg-[var(--surface-subtle)]"
             }`}
             onClick={() => setSearchParams({ view: "board" })}
           >
@@ -390,7 +393,9 @@ export default function TasksTab() {
           </button>
           <button
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-              currentView === "calendar" ? "bg-[#0E7490] text-white border-[#0E7490]" : "bg-white text-[#0E7490] border-[#C4E9ED] hover:bg-[#E2F4F6]"
+              currentView === "calendar" 
+                ? "bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm" 
+                : "bg-[var(--surface)] text-[var(--brand-primary)] border-[var(--line-soft)] hover:bg-[var(--surface-subtle)]"
             }`}
             onClick={() => setSearchParams({ view: "calendar" })}
           >
@@ -400,7 +405,7 @@ export default function TasksTab() {
 
         <div className="equal-split-row relaxed mt-4" style={{ "--split-count": 4 }}>
           <div className="relative">
-            <FiSearch className="absolute left-3 top-3.5 text-[#5B9EA8]" />
+            <FiSearch className="absolute left-3 top-3.5 text-[var(--text-muted)]" />
             <input
               className="form-input w-full !pl-10"
               placeholder="Search title, notes, subtasks, or category"
@@ -458,7 +463,7 @@ export default function TasksTab() {
           >
             Reset Controls
           </button>
-          <div className="rounded-xl border border-[#E2F4F6] bg-[#F8FCFD] px-4 py-3 text-sm text-[#5B9EA8]">
+          <div className="rounded-xl border border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--text-muted)]">
             Project work here is limited to tasks assigned directly to you.
           </div>
         </div>
@@ -468,11 +473,16 @@ export default function TasksTab() {
         <section className="card p-6 border border-[var(--line-soft)]">
           <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Task List</h3>
           {tasksLoading ? (
-            <p className="text-[var(--text-muted)]">Loading tasks...</p>
+            <div className="loading-spinner-container">
+              <div className="loading-spinner"></div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Loading your tasks...</p>
+            </div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-[var(--text-muted)] mb-3">No tasks found for the selected criteria.</p>
-              <button className="btn btn-secondary" onClick={openCreateModal}>Create your first task</button>
+            <div className="empty-state">
+              <div className="empty-state-icon">📋</div>
+              <h4 className="empty-state-title">No tasks found</h4>
+              <p className="empty-state-desc">There are no tasks matching your selected filters. Create a new task to get started.</p>
+              <button className="btn btn-primary text-xs font-bold uppercase tracking-wider rounded-xl" onClick={openCreateModal}>Create First Task</button>
             </div>
           ) : (
             <div className="space-y-4">

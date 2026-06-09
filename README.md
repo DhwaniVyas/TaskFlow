@@ -1,203 +1,245 @@
 # TaskFlow 🚀
 
-TaskFlow is a premium, state-of-the-art team collaboration and task management platform designed to streamline workspace productivity. It features a modern, high-contrast visual design, a responsive dual-theme system (Light/Dark/System), custom subtask workflows, multi-view task boards (List, Kanban, Calendar, and Agenda), and a robust backend notification service powered by Twilio SMS and NodeMailer.
+TaskFlow is a premium, high-fidelity team collaboration and task management platform designed to streamline workspace productivity. It features a modern, ocean-depth visual design, a responsive dual-theme system, multi-view boards (List, Kanban, Calendar, and Agenda), and automated notification alerts powered by Twilio SMS and NodeMailer.
+
+## 📱 User Interface Previews
+
+### 1. Interactive Landing Page
+![TaskFlow Landing Page](/images/landing_preview.png)
+
+### 2. Main Workspace Dashboard
+![TaskFlow Dashboard](/images/dashboard_preview.png)
+
+### 3. Productivity Intelligence & Analytics
+![TaskFlow Overview & Metrics](/images/overview_preview.png)
+
+---
+
+## 🎯 Core Features
+
+- **Multi-View Task Workspaces**: Toggle seamlessly between a nested List View (with inline subtask progress checklists), a drag-and-drop Kanban Board, a date-grid Calendar, and a chronological Agenda showing approaching milestones.
+- **Granular Project Collaborations**: Create shared project boards with custom theme colors and configure roles:
+  - **Owner (Head)**: Full administrative permissions to modify projects, dispatch member invites, write tasks, and write comments.
+  - **Member**: Permissions to toggle completion on assigned tasks, check subtask items, and comment on task cards.
+  - **Viewer**: Read-only access to tasks, comments, and members.
+- **Automated Alerts Gateway**: Integrated mail dispatch (via Brevo SMTP) for registration verification links, and instant SMS alerts (via Twilio API) for project creations, member invitations, acceptances, and task assignments.
+- **Deadline Background Scans**: A recurring scheduler scans tasks for approaching deadlines and automatically sends alert reminders to assignees 24 hours prior to expiration.
+- **Performance Intelligence**: Statistical analysis calculations detailing completed task ratios, overdue counts, busiest/fastest completion days, and active streak metrics with charts.
+
+---
+
+## 🛠️ Tech Stack & Versions
+
+TaskFlow is organized as a decoupled monorepo containing a React SPA frontend and an Express REST API backend.
+
+### Frontend
+- **Framework**: React 19 (`react` / `react-dom` @ `^19.2.6`)
+- **Build Server**: Vite 8 (`vite` @ `^8.0.12`, `@vitejs/plugin-react` @ `^6.0.1`)
+- **Routing**: React Router DOM 7 (`react-router-dom` @ `^7.15.1`)
+- **HTTP Client**: Axios (`axios` @ `^1.16.1`)
+- **Google OAuth**: Google Sign-In wrapper (`@react-oauth/google` @ `^0.12.2`)
+- **Animations**: Framer Motion 12 (`framer-motion` @ `^12.40.0`)
+- **Charting**: Chart.js 4 (`chart.js` @ `^4.5.1`, `react-chartjs-2` @ `^5.3.1`)
+- **Styling**: TailwindCSS 4 (`tailwindcss` @ `^4.3.0`, `@tailwindcss/vite` @ `^4.3.0`)
+- **Icons**: React Icons 5 (`react-icons` @ `^5.6.0`)
+- **Linter**: ESLint 10 (`eslint` @ `^10.3.0`)
+
+### Backend
+- **Framework**: Express 5 (`express` @ `^5.2.1`)
+- **Database ODM**: Mongoose 9 (`mongoose` @ `^9.6.2`)
+- **Authentication**: JWT (`jsonwebtoken` @ `^9.0.3`) & password hashing (`bcrypt` @ `^6.0.0`)
+- **Google Authentication**: Google Auth SDK (`google-auth-library` @ `^10.6.2`)
+- **Email Gateway**: Nodemailer 7 (`nodemailer` @ `^7.0.13`)
+- **SMS Gateway**: Twilio SDK 6 (`twilio` @ `^6.0.2`)
+- **Environment Handling**: Dotenv (`dotenv` @ `^17.4.2`)
+- **Developer Tools**: Nodemon (`nodemon` @ `^3.1.14`)
+
+### Hosting & Deployment Platforms
+- **Frontend SPA**: Vercel (read rewrite rules from `vercel.json`)
+- **Backend API**: Render / Heroku / Node-compatible server host
+- **Database Server**: MongoDB Atlas (Cloud NoSQL)
 
 ---
 
 ## 📂 Project Architecture
 
-TaskFlow is built as a monorepo consisting of two decoupled layers: a backend REST API and a frontend Single Page Application (SPA).
-
-```mermaid
-graph TD
-    A -->|[Client Browser] -->|HTTP / REST| B(Vite + React SPA)
-    B -->|Axios HTTP Requests| C(Express.js REST API)
-    C -->|Mongoose ODM| D[(MongoDB Database)]
-    C -->|SMS Alerts| E(Twilio SMS Gateway)
-    C -->|Emails & Invites| F(SMTP Mail Server / Brevo)
-```
-
-### Directory Structure
-
 ```text
 TaskFlow/
 ├── backend/                  # Node.js + Express REST API
 │   ├── src/
-│   │   ├── config/           # Database connections and Env validations
-│   │   ├── controllers/      # Route controllers (Auth, Projects, Tasks, Analytics, etc.)
-│   │   ├── middleware/       # Token protection, Logging, & Error Handlers
-│   │   ├── models/           # Mongoose Data Schemas (User, Task, Project, Comment, Notification, Log)
-│   │   ├── routes/           # Routing middleware
-│   │   ├── utils/            # Twilio SMS Engine, NodeMailer Mailer, Token Hashing
-│   │   └── app.js            # Express application mounting
-│   ├── server.js             # HTTP server entry point & periodic jobs
-│   └── package.json          # Backend dependencies
+│   │   ├── config/           # Database connections & Env validations
+│   │   ├── controllers/      # Routes logic (Auth, Projects, Tasks, Analytics, Comments)
+│   │   ├── middleware/       # JWT protection, request logger, error handlers
+│   │   ├── models/           # Mongoose Data Schemas (User, Project, Task, Comment, Notification, ActivityLog)
+│   │   ├── routes/           # REST endpoints
+│   │   └── utils/            # Twilio SMS wrapper, Mailer templates, Token utilities
+│   ├── server.js             # Entry point & 30-minute cron scheduling
+│   ├── .env.example          # Sample environment variables
+│   └── package.json          # Server dependencies
 │
-├── frontend/                 # React 19 + Vite Single Page Application
+├── frontend/                 # React SPA
 │   ├── src/
-│   │   ├── api/              # Axios instance configuration
-│   │   ├── components/       # Reusable components (Modals, ProtectRoute, etc.)
-│   │   ├── pages/            # View pages (Landing, Login, Register, VerifyEmail, Dashboard Layout)
+│   │   ├── api/              # Axios Client setup
+│   │   ├── components/       # UI Modals & Protection wrapper components
+│   │   ├── pages/            # View pages (Landing, Login, Register, Verification)
 │   │   │   └── dashboard/    # Tab modules (Overview, Tasks, Projects, Analytics, Notifications, Profile)
-│   │   ├── routes/           # React Router DOM mapping
-│   │   ├── styles/           # Global styles and dynamic CSS variables
+│   │   ├── routes/           # App routes mapping
+│   │   ├── styles/           # CSS themes, variables, and animations
 │   │   └── utils/            # JWT Token management
-│   ├── package.json          # Frontend dependencies
-│   └── vite.config.js        # Vite configurations
-└── vercel.json               # Frontend rewrite rules
+│   ├── public/               # Favicon & assets
+│   ├── .env.example          # Sample client environment variables
+│   └── package.json          # SPA dependencies
+│
+├── images/                   # UI previews
+└── vercel.json               # Frontend redirect rules for Router routing
 ```
 
 ---
 
-## ✨ Features Documentation
+## 🔑 Environment Variables Reference
 
-### 1. Robust Authentication & Google Sign-In
-* **Local Auth**: User registration with auto-generated NodeMailer email verification links, secure bcrypt password hashing, login, and token-based password reset workflows.
-* **Google OAuth**: Fast login and sign-up integration using Google OAuth 2.0 (`@react-oauth/google`).
-* **Security Checks**: Strict JWT authorization checks. Invites are validated against the logged-in user's email; mismatched accounts are prompted to switch sessions cleanly.
+### Backend Server Settings (`backend/.env`)
 
-### 2. Personal Task Workspace
-* **Flexible Views**: Toggle seamlessly between:
-  * **List View**: Inline subtasks, expandable task descriptions, and dynamic action buttons.
-  * **Kanban Board**: Drag-and-drop or status-update buttons (Todo, In Progress, Completed).
-  * **Calendar**: Month, Week, Day, and Agenda grids supporting HTML drag-and-drop task rescheduling.
-  * **Agenda View**: Chronological sequence showing deadlines and planned work.
-* **Detailed Task Composer**: Title, Category, Priority Dot indicators, Description, Subtask checklist, and precision Date-Time Deadlines (`datetime-local`).
-* **Inline Subtask Management**: Each subtask contains a progress badge and completed checkbox, which immediately updates the progress bar on the parent task.
+Configure a `.env` file inside the `backend/` directory by copying [backend/.env.example](file:///d:/Projects/TaskFlow/backend/.env.example):
 
-### 3. Project Workspace & Collaboration Space
-* **Compact Overview**: Overview grid showing active project descriptions and overall progress indicators.
-* **Collaboration & Roles**:
-  * **Owner (Head)**: Full permissions to edit/delete projects, invite members, write tasks, assign task cards, and leave comments.
-  * **Member**: Can comment on tasks and toggle completion on cards explicitly assigned to them.
-  * **Viewer**: Read-only access. Filtered out of task assignees and restricted from modifying elements.
-* **Secure Invites**: Secure invitation link dispatching. Acceptances add members directly to the project and automatically refresh the dashboard.
-* **Project Comment Threads**: Unified comments thread displaying task-specific discussions, supporting nested replies.
+| Key | Required | Description | Origin / Example |
+| :--- | :---: | :--- | :--- |
+| `PORT` | Yes | Local port for Express API | `5000` |
+| `NODE_ENV` | Yes | Server environment state | `development` or `production` |
+| `MONGO_URI` | Yes | MongoDB Atlas connection string | Get connection SRV string from MongoDB Atlas |
+| `JWT_SECRET` | Yes | Secret key used to sign session JWTs | Create a long random secure string |
+| `JWT_EXPIRES_IN` | Yes | JWT duration window | `20d` |
+| `CLIENT_URL` | Yes | Address of client SPA frontend | `http://localhost:5173` |
+| `CLIENT_URLS` | No | Additional CORS allowed urls (comma-split)| `https://domain1.com,https://domain2.com` |
+| `APP_URL` | Yes | Core base frontend address | `http://localhost:5173` |
+| `SMTP_HOST` | Yes | Mail server server endpoint | E.g. `smtp-relay.brevo.com` |
+| `SMTP_PORT` | Yes | Mail server connection port | `587` (TLS) or `465` (SSL) |
+| `SMTP_SECURE` | Yes | Enable SSL protocol (`true`/`false`) | `false` (for port 587) |
+| `SMTP_USER` | Yes | Mail server login name | SMTP account user email |
+| `SMTP_PASS` | Yes | Mail server password key | SMTP API password key |
+| `MAIL_FROM` | Yes | Sender identity displayed on emails | `TaskFlow <noreply@taskflow.com>` |
+| `GOOGLE_CLIENT_ID` | Yes | OAuth Client ID for SSO | Google Developer Console |
+| `GOOGLE_CLIENT_SECRET`| No | OAuth Client Secret for SSO | Google Developer Console |
+| `TWILIO_ACCOUNT_SID` | No | Twilio Account SID | Twilio Console dashboard |
+| `TWILIO_AUTH_TOKEN` | No | Twilio API auth token | Twilio Console dashboard |
+| `TWILIO_PHONE_NUMBER` | No | Purchased Twilio SMS number | Twilio Dashboard |
 
-### 4. Notification History & SMS Alerts
-* **Master Preferences**: Centralized settings to toggle Project or Task alerts.
-* **SMS Gateway (Twilio)**: Sends instant SMS alerts (Mock console fallback when offline) for project creation, invites, acceptances, and task assignments.
-* **Periodic Scans**: Scheduled job scanning MongoDB every 30 minutes to notify assignees of upcoming deadlines due within 24 hours.
-* **Log Log Tab**: Complete log of alerts showing dates, times, categories, and SMS delivery statuses.
+### Frontend Client Settings (`frontend/.env`)
 
-### 5. Analytics & Performance Insights
-* **Productivity Metrics**: Completed task volumes, overdue counts, completion speed averages, and tasks-per-day charts.
-* **Interactive Charts**: Progress metrics mapped with custom brand CSS colors responsive to theme changes.
+Configure a `.env` file inside the `frontend/` directory by copying [frontend/.env.example](file:///d:/Projects/TaskFlow/frontend/.env.example):
+
+| Key | Required | Description | Origin / Example |
+| :--- | :---: | :--- | :--- |
+| `VITE_API_URL` | Yes | Base URL target for backend requests | `http://localhost:5000/api` |
+| `VITE_GOOGLE_CLIENT_ID`| Yes | Google OAuth Client ID (matching backend) | Google Developer Console |
 
 ---
 
-## 🛠️ Setup Guide
+## 🚀 Getting Started
 
 ### Prerequisites
-* [Node.js](https://nodejs.org/) (v18+)
-* [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (or local MongoDB database)
-* [Twilio Account](https://www.twilio.com/) (Optional for live SMS)
+- **Node.js**: `v18.0.0` or higher is required.
+- **Package Manager**: `npm` (included with Node.js).
+- **Database**: A running MongoDB instance (locally or cloud-hosted on MongoDB Atlas).
 
----
+### Installation & Run Steps
 
-### Backend Setup
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/TaskFlow.git
+   cd TaskFlow
+   ```
 
-1. **Install Dependencies**:
+2. **Set up the backend server**:
    ```bash
    cd backend
    npm install
+   cp .env.example .env
+   # Open .env and insert your database, SMTP, and optional Twilio credentials
    ```
 
-2. **Configure Environment Variables**:
-   Create a `.env` file in the `backend/` root directory:
-   ```env
-   PORT=5000
-   NODE_ENV=development
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_signature_secret
-   JWT_EXPIRES_IN=20d
-   CLIENT_URL=http://localhost:5173
-   CLIENT_URLS=http://localhost:5173
-   APP_URL=http://localhost:5173
-
-   SMTP_HOST=smtp-relay.brevo.com
-   SMTP_PORT=587
-   SMTP_SECURE=false
-   SMTP_USER=your_smtp_username
-   SMTP_PASS=your_smtp_password
-   MAIL_FROM=TaskFlow <noreply@taskflow.com>
-
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-   # Optional Twilio Config (falls back to Mock Mode if left blank)
-   TWILIO_ACCOUNT_SID=your_twilio_sid
-   TWILIO_AUTH_TOKEN=your_twilio_auth_token
-   TWILIO_PHONE_NUMBER=your_twilio_phone_number
-   ```
-
-3. **Run Server**:
+3. **Start the backend server in development mode**:
    ```bash
    npm run dev
    ```
-   The backend will start on `http://localhost:5000`.
+   The backend REST server will start listening on `http://localhost:5000`.
 
----
-
-### Frontend Setup
-
-1. **Install Dependencies**:
+4. **Set up the frontend client**:
+   Open a new terminal window at the project root directory, then run:
    ```bash
    cd frontend
    npm install
+   cp .env.example .env
+   # Open .env and insert your VITE_API_URL and VITE_GOOGLE_CLIENT_ID credentials
    ```
 
-2. **Configure Environment Variables**:
-   Create a `.env` file in the `frontend/` root directory:
-   ```env
-   VITE_API_URL=http://localhost:5000/api
-   VITE_GOOGLE_CLIENT_ID=your_google_client_id
-   ```
-
-3. **Run Client**:
+5. **Start the frontend application**:
    ```bash
    npm run dev
    ```
-   The frontend will boot on `http://localhost:5173`.
+   The Vite client server will compile and open the client interface on `http://localhost:5173`.
 
 ---
 
-## 🚀 Deployment Guide
+## 🗄️ Database Setup
 
-### Database Deployment (MongoDB Atlas)
-1. Set up a free cluster on MongoDB Atlas.
-2. Allow access from any IP address (`0.0.0.0/0`) or configure specific server firewall rules.
-3. Obtain the connection URI and assign it to the `MONGO_URI` variable.
+TaskFlow uses **MongoDB** as its database system. 
 
-### Backend Deployment (Render / Heroku)
-1. Connect your GitHub repository to Render or Heroku.
-2. Select **Node.js** as the environment.
-3. Configure the start command:
-   ```bash
-   npm install && npm start
-   ```
-4. Input all backend env variables inside the service configuration tab. Ensure `CLIENT_URL` points to your final frontend domain.
+- **Schemas**: Schemas are configured and validated programmatically at the application level using Mongoose models (located in `backend/src/models/`).
+- **Setup & Migrations**: There are **no SQL schemas, manual migrations, or seed files** required. When the Express server establishes a connection to MongoDB (via `MONGO_URI`), Mongoose automatically creates the necessary collections and indexes.
+- **Indexes**: On startup, TaskFlow dynamically checks and builds a partial filter index (`googleId_1`) on the `users` collection to support both local email registration and Google Auth SSO without unique constraint clashes.
+
+---
+
+## 🚢 Production Deployment
 
 ### Frontend Deployment (Vercel)
-1. Import the project repository into Vercel.
-2. Set the root directory configuration to `frontend`.
-3. Set the build command to `npm run build` and output directory to `dist`.
+1. Register and sign in to Vercel.
+2. Link your GitHub account and import the TaskFlow repository.
+3. Configure the following project parameters:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
 4. Register the frontend environment variables (`VITE_API_URL` and `VITE_GOOGLE_CLIENT_ID`).
-5. Vercel will automatically read `vercel.json` to handle SPA route rewrites.
+5. Click **Deploy**. Vercel will automatically read `vercel.json` to handle SPA route rewrites.
+
+### Backend Deployment (Render / Heroku)
+1. Import the repository into Render or your preferred Node.js hosting platform.
+2. Set the build parameters:
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+3. Enter all required environment variables outlined in the `Environment Variables` table. Ensure `CLIENT_URL` points to your final frontend Vercel address.
+4. Deploy the service. Make sure to update the frontend's `VITE_API_URL` to point to this backend service endpoint.
 
 ---
 
-## 🎨 Theme & Typography
+## 🤝 Contributing Guide
 
-TaskFlow utilizes a curated, harmonious CSS color palette. Themes dynamically toggle via the `.theme-light` and `.theme-dark` classes on the root element.
+We welcome project contributions! Please review the guidelines below:
 
-| Variable Name | Light Mode Value | Dark Mode Value (Slate/Charcoal) |
-| :--- | :--- | :--- |
-| `--brand-primary` | `#0E7490` (Ocean Teal) | `#22D3EE` (Neon Cyan) |
-| `--brand-secondary`| `#4F46E5` (Royal Indigo)| `#818CF8` (Electric Indigo) |
-| `--brand-accent` | `#F97316` (Sunset Orange)| `#C084FC` (Neon Purple) |
-| `--surface` | `#FFFFFF` | `#1E293B` |
-| `--surface-subtle` | `#F8FAFC` | `#334155` |
-| `--line-soft` | `#D1D5DB` | `#475569` |
-| `--text-primary` | `#0F172A` | `#F8FAFC` |
-| `--text-muted` | `#64748B` | `#CBD5E1` |
+### Branch Naming Conventions
+- New features: `feature/short-description`
+- Bug fixes: `bugfix/short-description`
+- Refactoring tasks: `refactor/short-description`
+
+### Contribution Workflow
+1. Fork the repository and create your branch from `main`.
+2. Implement your changes, keeping business logic intact.
+3. Before committing, run ESLint from the `frontend` folder to guarantee compliance:
+   ```bash
+   cd frontend
+   npm run lint
+   ```
+4. Commit your changes with clear, descriptive commit messages.
+5. Push your branch to GitHub and open a Pull Request.
+
+---
+
+## 🛣️ Roadmap & Planned Features
+
+- [ ] Add attachments support (PDFs, images) for project tasks and comment threads.
+- [ ] Add editable statuses and column additions on the Kanban Board.
+- [ ] Establish socket connections for live board updates and collaborative comments.
+- [ ] Integrate SMS alerts with WhatsApp API configurations.

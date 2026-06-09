@@ -7,7 +7,6 @@ import ProtectedRoute from '../components/auth/ProtectedRoute';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
 import VerifyEmail from '../pages/VerifyEmail';
-import { isAuthenticated } from '../utils/auth';
 
 const DashboardLayout = lazy(() => import('../pages/dashboard/DashboardLayout'));
 const OverviewTab = lazy(() => import('../pages/dashboard/OverviewTab'));

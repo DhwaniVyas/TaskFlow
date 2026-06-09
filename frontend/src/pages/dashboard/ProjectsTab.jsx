@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FiFolder, FiMail, FiMessageSquare, FiUsers, FiClock, FiPlus, FiEdit2, FiTrash2, FiUser, FiCheckCircle } from "react-icons/fi";
+
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { clearToken } from "../../utils/auth";
 import api from "../../api/client";
@@ -8,7 +8,7 @@ import { useDashboardWorkspace } from "./DashboardLayout";
 const initialProject = {
   title: "",
   description: "",
-  color: "#0E7490",
+  color: "#E35336",
   startDate: "",
   targetDate: "",
 };
@@ -141,7 +141,7 @@ export default function ProjectsTab() {
   const [hoveredProjectId, setHoveredProjectId] = useState(null);
 
   const acceptedMembers = (openProject?.project?.members || []).filter((member) => member.status === "accepted");
-  const pendingMembers = (openProject?.project?.members || []).filter((member) => member.status === "pending");
+
   const isProjectHead = openProject ? String(openProject.project.owner?._id || openProject.project.owner) === String(userId) : false;
   const userMembership = openProject?.project?.members?.find((m) => String(m.user?._id || m.user) === String(userId));
   const userRole = userMembership?.role || (isProjectHead ? "owner" : "viewer");
@@ -209,7 +209,7 @@ export default function ProjectsTab() {
         }
       }
     })();
-  }, [fetchProjects, searchParams, setSearchParams, showToast, refreshDashboard]);
+  }, [fetchProjects, searchParams, setSearchParams, showToast, refreshDashboard, navigate]);
 
   const openCreateProject = () => {
     setEditingProject(null);
@@ -259,12 +259,13 @@ export default function ProjectsTab() {
   const sendInvite = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/projects/invite", invite);
+      const payload = { ...invite, projectId: openProject.project._id };
+      await api.post("/projects/invite", payload);
       showToast("Invitation email sent");
       setInvite({ projectId: "", email: "", role: "" });
       await fetchProjects();
-      if (openProject?.project?._id === invite.projectId) {
-        await fetchProjectDetails(invite.projectId);
+      if (openProject?.project?._id) {
+        await fetchProjectDetails(openProject.project._id);
       }
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to invite member");
@@ -402,9 +403,19 @@ export default function ProjectsTab() {
       {/* Project List View (compact and clean) */}
       <section className="space-y-3">
         {loading ? (
-          <div className="card p-6 text-[var(--text-muted)] border border-[var(--line-soft)]">Loading projects...</div>
+          <div className="card p-6 border border-[var(--line-soft)]">
+            <div className="loading-spinner-container">
+              <div className="loading-spinner"></div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Loading projects...</p>
+            </div>
+          </div>
         ) : projects.length === 0 ? (
-          <div className="card p-6 text-center text-[var(--text-muted)] border border-[var(--line-soft)]">No projects yet. Create your first project.</div>
+          <div className="empty-state">
+            <div className="empty-state-icon">📁</div>
+            <h4 className="empty-state-title">No projects found</h4>
+            <p className="empty-state-desc">You don't have any projects in your workspace yet. Create one to organize tasks together.</p>
+            <button className="btn btn-primary text-xs font-bold uppercase tracking-wider rounded-xl" onClick={openCreateProject}>Create Project</button>
+          </div>
         ) : (
           projects.map((project) => {
             const isHovered = hoveredProjectId === project._id;
@@ -483,8 +494,8 @@ export default function ProjectsTab() {
           <div className="bg-[var(--surface)] rounded-2xl w-full max-w-7xl max-h-[92vh] overflow-y-auto border border-[var(--line-soft)]">
             
             {/* Section 1: Project Information Section */}
-            <div className="p-6 border-b" style={{ borderColor: `${openProject.project.color}55` }}>
-              <div className="h-1.5 rounded-full mb-5" style={{ background: openProject.project.color }} />
+            <div className="p-6 border-b" style={{ borderColor: `${openProject.project.color}55`, background: `linear-gradient(180deg, ${openProject.project.color}0D 0%, transparent 100%)` }}>
+              <div className="h-1.5 rounded-full mb-5" style={{ background: `linear-gradient(90deg, ${openProject.project.color} 0%, var(--brand-secondary) 100%)` }} />
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div className="space-y-2 flex-1">
                   <h3 className="text-2xl font-bold" style={{ color: openProject.project.color }}>{openProject.project.title}</h3>
@@ -805,7 +816,7 @@ export default function ProjectsTab() {
                       <form onSubmit={sendInvite} className="flex flex-col gap-3">
                         <input
                           type="hidden"
-                          value={invite.projectId = openProject.project._id}
+                          value={openProject.project._id}
                         />
                         <input
                           className="form-input"

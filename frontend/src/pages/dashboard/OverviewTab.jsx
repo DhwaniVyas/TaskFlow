@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { FiBarChart2, FiCheckCircle, FiCheckSquare, FiClock, FiUser, FiActivity } from "react-icons/fi";
+import { FiBarChart2, FiCheckCircle, FiCheckSquare, FiClock, FiUser, FiActivity, FiAlertCircle, FiZap } from "react-icons/fi";
 import { useDashboardWorkspace } from "./DashboardLayout";
 
 function formatDate(dateString) {
@@ -43,16 +43,92 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      <section className="equal-split-row relaxed" style={{ "--split-count": 6 }}>
-        <div className="card p-5"><p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">Total Tasks</p><p className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2"><FiCheckSquare /> {overview.totalTasks || 0}</p></div>
-        <div className="card p-5"><p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">Completed</p><p className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2"><FiCheckCircle /> {overview.completedTasks || 0}</p></div>
-        <div className="card p-5"><p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">Pending</p><p className="text-2xl font-bold text-[var(--text-primary)]">{overview.pendingTasks || 0}</p></div>
-        <div className="card p-5"><p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">Overdue</p><p className="text-2xl font-bold text-[#DC2626]">{overview.overdueTasks || 0}</p></div>
-        <div className="card p-5"><p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">High Priority</p><p className="text-2xl font-bold text-[#F97316]">{overview.highPriorityTasks || 0}</p></div>
-        <div className="card p-5"><p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">Completion %</p><p className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2"><FiBarChart2 /> {overview.completionRate || 0}%</p></div>
+      {/* Welcome Header with signature gradient accent */}
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--line-soft)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/15 p-6 sm:p-8 text-left shadow-sm">
+        <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-gradient-to-tr from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20 blur-2xl pointer-events-none"></div>
+        <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">
+          Welcome back, <span className="text-[var(--brand-primary)] bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">{user.fullName || "User"}</span>!
+        </h2>
+        <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-2 max-w-xl font-medium leading-relaxed">
+          Here is your productivity roadmap. You currently have <span className="font-bold text-[var(--brand-primary)]">{overview.pendingTasks || 0} pending tasks</span> awaiting action.
+        </p>
+      </div>
+
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Total Tasks */}
+        <div className="card p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"></div>
+          <p className="text-xs text-[var(--text-muted)] mb-3.5 font-semibold uppercase tracking-wider">Total Tasks</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 flex items-center justify-center text-[var(--brand-primary)] shrink-0">
+              <FiCheckSquare className="text-base" />
+            </div>
+            <span>{overview.totalTasks || 0}</span>
+          </p>
+        </div>
+
+        {/* Completed */}
+        <div className="card p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--color-success-primary)] to-[var(--brand-secondary)]"></div>
+          <p className="text-xs text-[var(--text-muted)] mb-3.5 font-semibold uppercase tracking-wider">Completed</p>
+          <p className="text-2xl font-bold text-[var(--color-success-primary)] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[var(--color-success-primary)]/10 to-[var(--brand-secondary)]/10 flex items-center justify-center text-[var(--color-success-primary)] shrink-0">
+              <FiCheckCircle className="text-base" />
+            </div>
+            <span>{overview.completedTasks || 0}</span>
+          </p>
+        </div>
+
+        {/* Pending */}
+        <div className="card p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--color-pending-primary)] to-[var(--line-soft)]"></div>
+          <p className="text-xs text-[var(--text-muted)] mb-3.5 font-semibold uppercase tracking-wider">Pending</p>
+          <p className="text-2xl font-bold text-[var(--color-pending-primary)] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[var(--color-pending-primary)]/10 to-[var(--line-soft)]/10 flex items-center justify-center text-[var(--color-pending-primary)] shrink-0">
+              <FiClock className="text-base" />
+            </div>
+            <span>{overview.pendingTasks || 0}</span>
+          </p>
+        </div>
+
+        {/* Overdue */}
+        <div className="card p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--color-danger-primary)] to-[var(--line-soft)]"></div>
+          <p className="text-xs text-[var(--text-muted)] mb-3.5 font-semibold uppercase tracking-wider">Overdue</p>
+          <p className="text-2xl font-bold text-[var(--color-danger-primary)] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[var(--color-danger-primary)]/10 to-[var(--line-soft)]/10 flex items-center justify-center text-[var(--color-danger-primary)] shrink-0">
+              <FiAlertCircle className="text-base" />
+            </div>
+            <span>{overview.overdueTasks || 0}</span>
+          </p>
+        </div>
+
+        {/* High Priority */}
+        <div className="card p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--color-warning-primary)] to-[var(--brand-primary)]"></div>
+          <p className="text-xs text-[var(--text-muted)] mb-3.5 font-semibold uppercase tracking-wider">High Priority</p>
+          <p className="text-2xl font-bold text-[var(--brand-primary)] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[var(--color-warning-primary)]/10 to-[var(--brand-primary)]/10 flex items-center justify-center text-[var(--color-warning-primary)] shrink-0">
+              <FiZap className="text-base" />
+            </div>
+            <span>{overview.highPriorityTasks || 0}</span>
+          </p>
+        </div>
+
+        {/* Completion % */}
+        <div className="card p-5 relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-primary)]"></div>
+          <p className="text-xs text-[var(--text-muted)] mb-3.5 font-semibold uppercase tracking-wider">Completion %</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[var(--brand-secondary)]/10 to-[var(--brand-primary)]/10 flex items-center justify-center text-[var(--brand-primary)] shrink-0">
+              <FiBarChart2 className="text-base" />
+            </div>
+            <span>{overview.completionRate || 0}%</span>
+          </p>
+        </div>
       </section>
 
-      <section className="equal-split-row relaxed" style={{ "--split-count": 2 }}>
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6 border border-[var(--line-soft)]">
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
             <FiCalendarIcon /> Upcoming Deadlines

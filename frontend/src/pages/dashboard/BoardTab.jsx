@@ -27,9 +27,12 @@ function formatDeadline(dateString) {
   return `${day} ${month} ${year} — ${hours}:${minutes} ${ampm}`;
 }
 
-function dueText(task) {
-  return formatDeadline(task.dueDate);
-}
+const priorityStyles = {
+  low: { background: "var(--surface-subtle)", color: "var(--text-muted)", border: "var(--line-soft)" },
+  medium: { background: "#FDF4E5", color: "#C07D3E", border: "#F6E5D0" },
+  high: { background: "#FFF0ED", color: "#E35336", border: "#FADCD7" },
+  urgent: { background: "#F0E5DF", color: "#A0522D", border: "#DFD0C7" },
+};
 
 export default function BoardTab({ tasks = [], loading = false, onRefresh, onEditTask, showToast }) {
   const [dragTaskId, setDragTaskId] = useState(null);
@@ -70,7 +73,16 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
     }
   };
 
-  if (loading) return <div className="card p-6 text-[var(--text-muted)] border border-[var(--line-soft)]">Loading board...</div>;
+  if (loading) {
+    return (
+      <div className="card p-6 border border-[var(--line-soft)]">
+        <div className="loading-spinner-container">
+          <div className="loading-spinner"></div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Loading board...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -79,27 +91,31 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
         <p className="text-sm text-[var(--text-muted)] mt-1">Drag tasks between columns to update workflow status.</p>
       </section>
 
-      <section className="grid md:grid-cols-3 gap-4">
+      <section className="flex flex-row md:grid md:grid-cols-3 gap-4 overflow-x-auto md:overflow-visible pb-4 shrink-0">
         {columns.map((column) => (
           <div
             key={column.key}
-            className="card p-4 min-h-[460px] bg-[var(--surface-subtle)] border border-[var(--line-soft)]"
+            className="w-[85vw] sm:w-[340px] md:w-auto shrink-0 md:shrink card p-4 min-h-[460px] bg-[var(--surface-subtle)] border border-[var(--line-soft)] flex flex-col"
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(column.key)}
           >
             <div className="flex items-center justify-between mb-3 border-b border-[var(--line-soft)] pb-2">
-              <h3 className="text-base font-semibold text-[var(--text-primary)]">{column.title}</h3>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]" />
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">{column.title}</h3>
+              </div>
               <span className="text-xs text-[var(--text-muted)]">
                 {grouped[column.key].length} tasks | {completionPercent(column.key)}%
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 overflow-y-auto">
               {grouped[column.key].map((task) => {
                 const subtasks = task.subtasks || [];
                 const done = subtasks.filter((s) => s.completed).length;
-                const projectColor = task.projectColor || "#0E7490";
+                const projectColor = task.projectColor || "#A0522D";
                 const isProjectTask = Boolean(task.projectId);
+                const styleObj = priorityStyles[task.priority?.toLowerCase()] || priorityStyles.low;
 
                 return (
                   <div
@@ -113,13 +129,13 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-[var(--text-primary)]">{task.title}</h4>
+                      <h4 className="text-sm font-semibold text-[var(--text-primary)] truncate">{task.title}</h4>
                       <span
-                        className="text-[10px] px-2 py-1 rounded uppercase border"
+                        className="text-[10px] px-2 py-0.5 rounded uppercase border font-semibold shrink-0"
                         style={{
-                          background: isProjectTask ? `${projectColor}14` : "#FFF7ED",
-                          color: isProjectTask ? projectColor : "#C2410C",
-                          borderColor: isProjectTask ? `${projectColor}44` : "#FED7AA",
+                          background: isProjectTask ? `${projectColor}14` : styleObj.background,
+                          color: isProjectTask ? projectColor : styleObj.color,
+                          borderColor: isProjectTask ? `${projectColor}44` : styleObj.border,
                         }}
                       >
                         {task.priority}
@@ -127,7 +143,7 @@ export default function BoardTab({ tasks = [], loading = false, onRefresh, onEdi
                     </div>
                     <p className="text-xs text-[var(--text-muted)] mt-1">{task.description || "No description"}</p>
                     <div className="text-xs text-[var(--text-muted)] mt-2 flex items-center gap-1">
-                      <FiClock /> {dueText(task)}
+                      <FiClock /> {formatDeadline(task.dueDate)}
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2">
                       <div className="text-xs text-[var(--text-muted)] font-medium">Subtasks: {done}/{subtasks.length}</div>

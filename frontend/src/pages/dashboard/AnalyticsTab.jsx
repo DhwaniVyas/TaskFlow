@@ -55,7 +55,6 @@ export default function AnalyticsTab() {
   // Raw fetched datasets
   const [allTasks, setAllTasks] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [backendAnalytics, setBackendAnalytics] = useState(null);
 
   // Monitor dark mode state for live chart redrawing
   const [isDarkMode, setIsDarkMode] = useState(
@@ -76,17 +75,17 @@ export default function AnalyticsTab() {
   // Compute theme colors dynamically
   const colors = useMemo(() => {
     return {
-      primary: isDarkMode ? "#22D3EE" : "#0E7490",       // Cyan
-      secondary: isDarkMode ? "#818CF8" : "#4F46E5",     // Indigo
-      accent: isDarkMode ? "#C084FC" : "#F97316",        // Orange (Light) / Purple (Dark)
-      success: "#16A34A",
-      warning: "#F59E0B",
-      danger: "#DC2626",
-      textPrimary: isDarkMode ? "#F8FAFC" : "#0F172A",
-      textMuted: isDarkMode ? "#CBD5E1" : "#64748B",
-      border: isDarkMode ? "#475569" : "#D1D5DB",
-      surface: isDarkMode ? "#1E293B" : "#ffffff",
-      surfaceSubtle: isDarkMode ? "#334155" : "#F8FAFC",
+      primary: "#185FA5",                                // Primary Blue
+      secondary: "#1FA3A3",                              // Teal Accent
+      accent: "#7A56D6",                                 // Muted Purple Accent
+      success: "#1FA37A",                                // Green-teal
+      warning: "#F2A93B",                                // Amber
+      danger: "#D64545",                                 // Red
+      textPrimary: isDarkMode ? "#E8F3FC" : "#102A43",
+      textMuted: isDarkMode ? "#A5BDD3" : "#52667A",
+      border: isDarkMode ? "#183350" : "#D3E1F1",
+      surface: isDarkMode ? "#102235" : "#ffffff",
+      surfaceSubtle: isDarkMode ? "#162F4A" : "#F4F8FB",
     };
   }, [isDarkMode]);
 
@@ -113,15 +112,12 @@ export default function AnalyticsTab() {
       setLoading(true);
       // Backend api queries can run in parallel
       const rangeParam = ["week", "month", "year"].includes(range) ? range : "month";
-      const [analyticsRes, projectsRes, tasksList] = await Promise.all([
+      const [, projectsRes, tasksList] = await Promise.all([
         api.get("/analytics", { params: { range: rangeParam } }).catch(() => null),
         api.get("/projects").catch(() => ({ data: { data: [] } })),
         fetchAllTasks().catch(() => []),
       ]);
 
-      if (analyticsRes) {
-        setBackendAnalytics(analyticsRes.data.data);
-      }
       setProjects(projectsRes.data.data || []);
       setAllTasks(tasksList);
     } catch (err) {
@@ -584,16 +580,15 @@ export default function AnalyticsTab() {
       datasets: [
         {
           data: [low, medium, high],
-          backgroundColor: [
-            colors.primary + "CC",
-            colors.secondary + "CC",
-            colors.accent + "CC",
-          ],
-          borderColor: [
-            colors.primary,
-            colors.secondary,
-            colors.accent,
-          ],
+          backgroundColor: (context) => {
+            const { ctx, chartArea } = context.chart;
+            if (!chartArea) return null;
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, colors.primary);
+            gradient.addColorStop(1, colors.secondary);
+            return gradient;
+          },
+          borderColor: colors.primary,
           borderWidth: 1,
           borderRadius: 6,
         },
@@ -609,7 +604,14 @@ export default function AnalyticsTab() {
           label: "Completed Tasks",
           data: weeklyTrend.values,
           borderColor: colors.primary,
-          backgroundColor: colors.primary + "1A",
+          backgroundColor: (context) => {
+            const { ctx, chartArea } = context.chart;
+            if (!chartArea) return null;
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, colors.primary + "44");
+            gradient.addColorStop(1, colors.secondary + "00");
+            return gradient;
+          },
           fill: true,
           tension: 0.4,
           pointBackgroundColor: colors.primary,

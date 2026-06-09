@@ -24,10 +24,10 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#F0F9FA] via-white to-[#FFE4D6]/20 flex items-center justify-center px-6">
-      <div className="card bg-white p-8 w-full max-w-md">
-        <h1 className="page-title mb-2">Forgot Password</h1>
-        <p className="text-sm text-[#5B9EA8] mb-6">Enter your email to receive a reset link.</p>
+    <div className="min-h-screen bg-[var(--app-bg)] flex items-center justify-center px-6">
+      <div className="card bg-[var(--surface)] p-8 w-full max-w-md border-[var(--line-soft)]">
+        <h1 className="page-title text-[var(--text-primary)] mb-2">Forgot Password</h1>
+        <p className="text-sm text-[var(--text-muted)] mb-6">Enter your email to receive a reset link.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
@@ -42,8 +42,8 @@ export default function ForgotPassword() {
             {loading ? "Sending..." : "Send Reset Link"}
           </button>
         </form>
-        <p className="text-xs mt-4 text-[#5B9EA8]">
-          Back to <Link className="text-[#0E7490] font-semibold" to="/login">Login</Link>
+        <p className="text-xs mt-4 text-[var(--text-muted)]">
+          Back to <Link className="text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-semibold" to="/login">Login</Link>
         </p>
       </div>
     </div>

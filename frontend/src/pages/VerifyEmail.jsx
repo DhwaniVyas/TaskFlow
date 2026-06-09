@@ -31,10 +31,10 @@ export default function VerifyEmail() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#F0F9FA] via-white to-[#FFE4D6]/20 flex items-center justify-center px-6">
-      <div className="card bg-white p-8 w-full max-w-md text-center">
-        <h1 className="page-title mb-4">Email Verification</h1>
-        {loading && <p className="text-[#0E7490]">Verifying your email...</p>}
+    <div className="min-h-screen bg-[var(--app-bg)] flex items-center justify-center px-6">
+      <div className="card bg-[var(--surface)] border-[var(--line-soft)] p-8 w-full max-w-md text-center">
+        <h1 className="page-title text-[var(--text-primary)] mb-4">Email Verification</h1>
+        {loading && <p className="text-[var(--brand-primary)]">Verifying your email...</p>}
         {!loading && error && <p className="form-error-msg">{error}</p>}
         {!loading && message && <p className="text-green-700 text-sm">{message}</p>}
         {!loading && (
