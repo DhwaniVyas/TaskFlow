@@ -2,18 +2,6 @@
 
 TaskFlow is a premium, high-fidelity team collaboration and task management platform designed to streamline workspace productivity. It features a modern, ocean-depth visual design, a responsive dual-theme system, multi-view boards (List, Kanban, Calendar, and Agenda), and automated notification alerts powered by Twilio SMS and NodeMailer.
 
-## 📱 User Interface Previews
-
-### 1. Interactive Landing Page
-![TaskFlow Landing Page](/images/landing_preview.png)
-
-### 2. Main Workspace Dashboard
-![TaskFlow Dashboard](/images/dashboard_preview.png)
-
-### 3. Productivity Intelligence & Analytics
-![TaskFlow Overview & Metrics](/images/overview_preview.png)
-
----
 
 ## 🎯 Core Features
 
