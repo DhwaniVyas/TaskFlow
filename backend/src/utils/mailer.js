@@ -1,109 +1,72 @@
-const nodemailer = require("nodemailer");
+
 const { env } = require("../config/env");
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: Number(env.SMTP_PORT),
-  secure: env.SMTP_SECURE === "true",
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-// Test SMTP connection when server starts
-transporter.verify()
-  .then(() => {
-    console.log("[SMTP] Connection successful");
-  })
-  .catch((error) => {
-    console.error("[SMTP] Connection failed:", error.message);
-  });
+// Convert "TaskFlow <noreply@example.com>" into
+// { name: "TaskFlow", email: "noreply@example.com" }
+function getSenderDetails(sender) {
+  const match = sender.match(/^(.*?)\s*<([^<>]+)>$/);
+
+  if (match) {
+    return {
+      name: match[1].trim() || "TaskFlow",
+      email: match[2].trim(),
+    };
+  }
+
+  return {
+    name: "TaskFlow",
+    email: sender.trim(),
+  };
+}
 
 async function sendEmail({ to, subject, html }) {
-  console.log(`[SMTP] Attempting to send email to: ${to}`);
+  if (!to || !subject || !html) {
+    throw new Error("Email requires recipient, subject, and HTML content.");
+  }
+
+  console.log(`[EMAIL] Sending email to: ${to}`);
 
   try {
-    const info = await transporter.sendMail({
-      from: env.MAIL_FROM,
-      to,
-      subject,
-      html,
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "api-key": env.BREVO_API_KEY,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: getSenderDetails(env.MAIL_FROM),
+        to: [
+          {
+            email: to,
+          },
+        ],
+        subject,
+        htmlContent: html,
+      }),
     });
 
-    console.log(`[SMTP] Email sent successfully. Message ID: ${info.messageId}`);
+    const responseData = await response.json().catch(() => ({}));
 
-    return info;
+    if (!response.ok) {
+      const errorMessage =
+        responseData.message || `Brevo API returned HTTP ${response.status}`;
+
+      console.error("[EMAIL] Brevo API error:", errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    console.log(
+      `[EMAIL] Email accepted by Brevo. Message ID: ${responseData.messageId}`
+    );
+
+    return responseData;
   } catch (error) {
-    console.error("[SMTP] Email sending failed:", error.message);
+    console.error("[EMAIL] Sending failed:", error.message);
     throw error;
   }
 }
 
-module.exports = {
-  sendEmail,
-};
-
-
-// const nodemailer = require("nodemailer");
-// const { env } = require("../config/env");
-
-// const transporter = nodemailer.createTransport({
-//   host: env.SMTP_HOST,
-//   port: env.SMTP_PORT,
-//   secure: env.SMTP_SECURE,
-//   auth: {
-//     user: env.SMTP_USER,
-//     pass: env.SMTP_PASS,
-//   },
-// });
-
-// async function sendEmail({ to, subject, html }) {
-//   await transporter.sendMail({
-//     from: env.MAIL_FROM,
-//     to,
-//     subject,
-//     html,
-//   });
-// }
-
-// module.exports = { sendEmail };
-
-
-// // const nodemailer = require("nodemailer");
-// // const { env } = require("../config/env");
-
-// // const transporter = nodemailer.createTransport({
-// //   host: env.SMTP_HOST,
-// //   port: Number(env.SMTP_PORT),
-// //   secure: env.SMTP_SECURE === "true",
-// //   auth: {
-// //     user: env.SMTP_USER,
-// //     pass: env.SMTP_PASS,
-// //   },
-// // });
-
-// // transporter.verify()
-// //   .then(() => {
-// //     console.log("[SMTP TEST] Connection successful");
-// //   })
-// //   .catch((error) => {
-// //     console.error("[SMTP TEST] Connection failed:", error.message);
-// //   });
-
-// // async function sendEmail({ to, subject, html }) {
-// //   console.log(`[SMTP TEST] Sending email to ${to}`);
-
-// //   const info = await transporter.sendMail({
-// //     from: env.MAIL_FROM,
-// //     to,
-// //     subject,
-// //     html,
-// //   });
-
-// //   console.log(`[SMTP TEST] Email sent: ${info.messageId}`);
-
-// //   return info;
-// // }
-
-// // module.exports = { sendEmail };
+module.exports = { sendEmail };

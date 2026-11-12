@@ -1,3 +1,4 @@
+
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -10,12 +11,8 @@ const requiredVars = [
   "JWT_EXPIRES_IN",
   "CLIENT_URL",
   "APP_URL",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_SECURE",
-  "SMTP_USER",
-  "SMTP_PASS",
   "MAIL_FROM",
+  "BREVO_API_KEY",
   "GOOGLE_CLIENT_ID",
 ];
 
@@ -28,20 +25,25 @@ for (const key of requiredVars) {
 const env = {
   PORT: Number(process.env.PORT),
   NODE_ENV: process.env.NODE_ENV,
+
   MONGO_URI: process.env.MONGO_URI,
+
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+
   CLIENT_URL: process.env.CLIENT_URL,
-  CLIENT_URLS: process.env.CLIENT_URLS ? process.env.CLIENT_URLS .split(",") .map((item) => item.trim()) .filter(Boolean) : [],
+  CLIENT_URLS: process.env.CLIENT_URLS
+    ? process.env.CLIENT_URLS.split(",").map((item) => item.trim()).filter(Boolean)
+    : [],
   APP_URL: process.env.APP_URL,
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: Number(process.env.SMTP_PORT),
-  SMTP_SECURE: process.env.SMTP_SECURE === "true",
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASS: process.env.SMTP_PASS,
+
+  // Brevo transactional email API
+  BREVO_API_KEY: process.env.BREVO_API_KEY,
   MAIL_FROM: process.env.MAIL_FROM,
+
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
+
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || "",
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || "",
   TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || "",
